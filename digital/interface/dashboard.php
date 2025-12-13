@@ -196,8 +196,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
     $reason = $_POST['deletion_reason_confirmed'] ?? ''; // Capture the reason
     
     if ($studentIdToDelete) {
-        if ($manager->deleteStudent($studentIdToDelete)) {
-            // Reason is captured in $reason variable if you wish to log it in the future
+        // PASS THE REASON HERE
+        if ($manager->deleteStudent($studentIdToDelete, $reason)) {
             header("Location: " . $_SERVER['PHP_SELF'] . "?section=delete_student&delete_success=true");
             exit;
         } else {
@@ -703,6 +703,18 @@ if(isset($_GET['course_add_success']) || isset($_GET['course_delete_success'])) 
             
             h1.section-title { border: none; text-align: center; margin-bottom: 10px; }
             .card-grid, .chart-grid { display: none; } /* Hide dashboard widgets on print */
+        }
+
+        /* --- SCROLLBAR REMOVAL --- */
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Hide scrollbar for IE, Edge and Firefox */
+        html, body, .sidebar-nav {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
         }
     </style>
 </head>

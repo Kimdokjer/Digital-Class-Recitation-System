@@ -18,7 +18,6 @@ class studentmanager extends Database {
     public $middleName = "";
     public $gender = "";
     public $birthDate = "";
-    // New Property
     public $nickname = ""; 
 
     public $recitationStudentId;
@@ -394,6 +393,35 @@ class studentmanager extends Database {
         }
     }
 
+    // --- NOTIFICATION: DELETION (New Helper) ---
+    private function sendDeletionNotification($studentData, $reason) {
+        $studentName = htmlspecialchars($studentData['firstname']);
+        $reasonText = htmlspecialchars($reason);
+        if (empty($reasonText)) {
+            $reasonText = "Administrative action.";
+        }
+
+        $subject = "Account Deletion Notice - Digital Recitation System";
+        $body = "
+            <html><body>
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;'>
+                <h2 style='color: #D32F2F; text-align: center;'>Account Deleted</h2>
+                <p style='font-size: 1.1em; text-align: center;'>Hello " . $studentName . ",</p>
+                <p style='text-align: center;'>Your account and all associated records have been permanently removed from the Digital Class Recitation System.</p>
+                
+                <div style='background-color: #f9f9f9; border-radius: 5px; padding: 15px; margin: 20px 0; text-align: center;'>
+                    <strong>Reason for deletion:</strong><br>
+                    <span style='color: #333; font-style: italic;'>" . $reasonText . "</span>
+                </div>
+                
+                <p style='font-size: 0.9em; color: #777; text-align: center;'>If you believe this is an error, please contact your professor immediately.</p>
+            </div>
+            </body></html>
+        ";
+
+        return $this->sendEmail($studentData['email'], $studentName, $subject, $body);
+    }
+
     // --- RECITATION: ADD GRADE ---
     public function addRecitation() {
         $sql = "INSERT INTO recits (student_id, subject_code, date, score, mode) VALUES (:studentId, :subjectCode, :date, :score, :mode)";
@@ -652,7 +680,11 @@ class studentmanager extends Database {
         return 0;
     }
 
-    public function deleteStudent($studentId) {
+    // --- MAIN: DELETE STUDENT (UPDATED) ---
+    public function deleteStudent($studentId, $reason = "") {
+        // 1. Fetch student info first to get email for notification
+        $studentData = $this->fetchStudent($studentId);
+        
         $conn = $this->connect();
         $conn->beginTransaction();
         try {
@@ -663,6 +695,12 @@ class studentmanager extends Database {
 
              if ($query_student->rowCount() > 0) {
                  $conn->commit();
+                 
+                 // 2. Send Email Notification if student existed and has email
+                 if ($studentData && !empty($studentData['email'])) {
+                     $this->sendDeletionNotification($studentData, $reason);
+                 }
+                 
                  return true;
              } else {
                  $conn->rollBack();

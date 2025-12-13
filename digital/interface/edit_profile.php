@@ -53,7 +53,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $fname = trim($_POST['firstName']);
         $mname = trim($_POST['middleName']);
         $nname = trim($_POST['nickname']);
-        $gender = $_POST['gender'];
+        
+        // Gender Logic: If 'Other' is selected, use the text input
+        $genderSelection = $_POST['gender'];
+        $gender = $genderSelection;
+        if ($genderSelection === 'Other' && !empty($_POST['genderOther'])) {
+            $gender = trim($_POST['genderOther']);
+        }
 
         if ($manager->updateStudentBasicInfo($studentId, $lname, $fname, $mname, $nname, $gender)) {
             $successMsg = "Profile updated successfully.";
@@ -91,6 +97,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 }
+
+// Logic to determine initial gender state for the UI
+$currentGender = $studentData['gender'];
+$isStandardGender = ($currentGender === 'Male' || $currentGender === 'Female');
+$selectValue = $isStandardGender ? $currentGender : 'Other';
+$otherInputValue = $isStandardGender ? '' : $currentGender;
 ?>
 
 <!DOCTYPE html>
@@ -183,11 +195,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 <div class="form-group">
                     <label>Gender</label>
-                    <select name="gender">
-                        <option value="Male" <?= $studentData['gender'] == 'Male' ? 'selected' : '' ?>>Male</option>
-                        <option value="Female" <?= $studentData['gender'] == 'Female' ? 'selected' : '' ?>>Female</option>
-                        <option value="Other" <?= $studentData['gender'] == 'Other' ? 'selected' : '' ?>>Other</option>
+                    <select name="gender" id="genderSelect" onchange="toggleGender()">
+                        <option value="Male" <?= $selectValue == 'Male' ? 'selected' : '' ?>>Male</option>
+                        <option value="Female" <?= $selectValue == 'Female' ? 'selected' : '' ?>>Female</option>
+                        <option value="Other" <?= $selectValue == 'Other' ? 'selected' : '' ?>>Other</option>
                     </select>
+                    
+                    <div id="otherGenderDiv" style="display: none; margin-top: 10px;">
+                        <input type="text" name="genderOther" id="genderOther" 
+                               placeholder="Please specify your gender" 
+                               value="<?= htmlspecialchars($otherInputValue) ?>">
+                    </div>
                 </div>
             </div>
 
@@ -233,6 +251,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <a href="edit_profile.php" style="color:#777; font-size:0.9em;">Cancel</a>
         </div>
     </div>
+
+    <script>
+        function toggleGender() {
+            const select = document.getElementById('genderSelect');
+            const otherDiv = document.getElementById('otherGenderDiv');
+            const otherInput = document.getElementById('genderOther');
+            
+            if (select.value === 'Other') {
+                otherDiv.style.display = 'block';
+                otherInput.setAttribute('required', 'required');
+            } else {
+                otherDiv.style.display = 'none';
+                otherInput.removeAttribute('required');
+            }
+        }
+
+        // Run on load to handle pre-filled values
+        window.onload = function() {
+            toggleGender();
+        };
+    </script>
 
 </body>
 </html>
