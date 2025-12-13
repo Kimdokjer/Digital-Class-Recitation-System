@@ -100,7 +100,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 // Logic to determine initial gender state for the UI
 $currentGender = $studentData['gender'];
-$isStandardGender = ($currentGender === 'Male' || $currentGender === 'Female');
+$isStandardGender = ($currentGender === 'Man' || $currentGender === 'Woman');
 $selectValue = $isStandardGender ? $currentGender : 'Other';
 $otherInputValue = $isStandardGender ? '' : $currentGender;
 ?>
@@ -196,8 +196,8 @@ $otherInputValue = $isStandardGender ? '' : $currentGender;
                 <div class="form-group">
                     <label>Gender</label>
                     <select name="gender" id="genderSelect" onchange="toggleGender()">
-                        <option value="Male" <?= $selectValue == 'Male' ? 'selected' : '' ?>>Male</option>
-                        <option value="Female" <?= $selectValue == 'Female' ? 'selected' : '' ?>>Female</option>
+                        <option value="Man" <?= $selectValue == 'Man' ? 'selected' : '' ?>>Man</option>
+                        <option value="Woman" <?= $selectValue == 'Woman' ? 'selected' : '' ?>>Woman</option>
                         <option value="Other" <?= $selectValue == 'Other' ? 'selected' : '' ?>>Other</option>
                     </select>
                     
