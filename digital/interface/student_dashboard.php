@@ -77,6 +77,10 @@ try {
 // --- Original Page Logic ---
 $studentId = $_SESSION['username']; 
 $studentData = $manager->fetchStudent($studentId);
+
+// --- NEW LOGIC: DETERMINE DISPLAY NAME (NICKNAME VS FIRSTNAME) ---
+$displayName = !empty($studentData['nickname']) ? $studentData['nickname'] : ($studentData['firstname'] ?? 'Student');
+
 $enrolledSubjects = $manager->getStudentEnrolledSubjects($studentId); 
 
 $view = $_GET['view'] ?? 'dashboard';
@@ -116,7 +120,7 @@ header('X-Frame-Options: SAMEORIGIN');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard - <?= htmlspecialchars($studentData['firstname'] ?? 'Student') ?></title>
+    <title>Student Dashboard - <?= htmlspecialchars($displayName) ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
@@ -522,12 +526,14 @@ header('X-Frame-Options: SAMEORIGIN');
                 </div>
 
                 <div class="user-details">
-                    <span><?= htmlspecialchars($studentData['firstname'] ?? 'Student') ?></span>
+                    <span><?= htmlspecialchars($displayName) ?></span>
                     <small><?= htmlspecialchars($studentData['email'] ?? '') ?></small>
                 </div>
-                <div class="avatar-circle">
-                    <?= strtoupper(substr($studentData['firstname'] ?? 'S', 0, 1)) ?>
-                </div>
+                <a href="edit_profile.php" title="Edit Profile" style="text-decoration: none;">
+                    <div class="avatar-circle">
+                        <?= strtoupper(substr($displayName, 0, 1)) ?>
+                    </div>
+                </a>
             </div>
         </nav>
 
@@ -615,8 +621,8 @@ header('X-Frame-Options: SAMEORIGIN');
                                  </div>
                                  
                                  <div class="stats-row">
-                                    <span>Recitations: <strong><?= $recitCount ?></strong></span>
-                                    <span>Avg: <strong><?= number_format($subjectAverage, 2) ?></strong></span>
+                                     <span>Recitations: <strong><?= $recitCount ?></strong></span>
+                                     <span>Avg: <strong><?= number_format($subjectAverage, 2) ?></strong></span>
                                  </div>
                              </div>
                          </a>

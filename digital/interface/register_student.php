@@ -50,6 +50,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $manager->password = $student_form_data["password"];
             $manager->lastName = $student_form_data["lastName"];
             $manager->firstName = $student_form_data["firstName"];
+            // Middle name is optional, defaults to empty string if not set
             $manager->middleName = $student_form_data["middleName"] ?? "";
             $manager->gender = ($student_form_data["gender"] === 'Other') ? $student_form_data["genderSpecify"] : $student_form_data["gender"];
             $manager->birthDate = $student_form_data["birthDate"];
@@ -408,7 +409,49 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <input type="hidden" name="action" value="register">
 
             <div class="step active" id="step1">
-                <h2>Create Account</h2>
+                <h2>Personal Details</h2>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" name="lastName" id="lastName" required>
+                </div>
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input type="text" name="firstName" id="firstName" required>
+                </div>
+                <div class="form-group">
+                    <label>Middle Name <span style="font-weight:normal; color:#888; font-size:0.8em;">(Optional)</span></label>
+                    <input type="text" name="middleName" id="middleName" placeholder="Optional">
+                </div>
+                <div class="form-group">
+                    <label>Gender</label>
+                    <select name="gender" id="gender" onchange="toggleGender()" required>
+                        <option value="">Select Gender</option>
+                        <option value="Man">Man</option>
+                        <option value="Woman">Woman</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group" id="genderSpecifyBox" style="display:none;">
+                    <input type="text" name="genderSpecify" id="genderSpecify" placeholder="Please specify">
+                </div>
+                <div class="form-group">
+                    <label>Birth Date</label>
+                    <input type="date" name="birthDate" id="birthDate" required max="<?= date('Y-m-d') ?>">
+                </div>
+                <p class="error-msg" id="error1"></p>
+
+                <div class="nav-buttons" style="justify-content: flex-end;">
+                    <button type="button" class="btn-arrow" onclick="nextStep(1)">
+                        <i class="material-icons">arrow_forward</i>
+                    </button>
+                </div>
+                <p style="margin-top:20px; font-size:0.9em; color:#666;">
+                    Already registered? <a href="login.php">Login here</a>
+                </p>
+            </div>
+
+            <div class="step" id="step2">
+                <h2>Security</h2>
                 <div class="form-group">
                     <label>Student ID</label>
                     <input type="text" name="studentId" id="studentId" required placeholder="e.g. 2024001">
@@ -427,46 +470,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <input type="password" name="confirmPassword" id="confirmPassword" required placeholder="Re-enter Password">
                     <i class="material-icons toggle-pw" onclick="togglePw('confirmPassword', this)">visibility_off</i>
                 </div>
-                <p class="error-msg" id="error1"></p>
-                
-                <div class="nav-buttons" style="justify-content: flex-end;">
-                    <button type="button" class="btn-arrow" onclick="nextStep(1)">
-                        <i class="material-icons">arrow_forward</i>
-                    </button>
-                </div>
-                <p style="margin-top:20px; font-size:0.9em; color:#666;">
-                    Already registered? <a href="login.php">Login here</a>
-                </p>
-            </div>
-
-            <div class="step" id="step2">
-                <h2>Personal Details</h2>
-                <div class="form-group">
-                    <label>Last Name</label>
-                    <input type="text" name="lastName" id="lastName" required>
-                </div>
-                <div class="form-group">
-                    <label>First Name</label>
-                    <input type="text" name="firstName" id="firstName" required>
-                </div>
-                <div class="form-group">
-                    <label>Gender</label>
-                    <select name="gender" id="gender" onchange="toggleGender()" required>
-                        <option value="">Select Gender</option>
-                        <option value="Man">Man</option>
-                        <option value="Woman">Woman</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div class="form-group" id="genderSpecifyBox" style="display:none;">
-                    <input type="text" name="genderSpecify" id="genderSpecify" placeholder="Please specify">
-                </div>
-                <div class="form-group">
-                    <label>Birth Date</label>
-                    <input type="date" name="birthDate" id="birthDate" required>
-                </div>
                 <p class="error-msg" id="error2"></p>
-
+                
                 <div class="nav-buttons">
                     <button type="button" class="btn-arrow btn-back" onclick="prevStep(2)">
                         <i class="material-icons">arrow_back</i>
@@ -592,19 +597,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         });
 
-        if (step === 1) {
+        // Validation for Step 1 (Personal Details)
+        if (step === 1 && valid) {
+            const bdateInput = document.getElementById('birthDate');
+            if(bdateInput.value) {
+                const selectedDate = new Date(bdateInput.value);
+                const today = new Date();
+                today.setHours(0,0,0,0); // normalize today for comparison
+                
+                if(selectedDate > today) {
+                    showError(1, "Birth date cannot be in the future.");
+                    bdateInput.style.borderColor = '#cc0000';
+                    return; // Stop here
+                }
+            }
+        }
+
+        // Validation for Step 2 (Account Details)
+        if (step === 2) {
             const pw = document.getElementById('password').value;
             const confirm = document.getElementById('confirmPassword').value;
             
             // Allow if inputs are valid so far
             if (valid) {
                  if (pw.length < 8) { 
-                     showError(1, "Password must be at least 8 characters."); 
+                     showError(2, "Password must be at least 8 characters."); 
                      document.getElementById('password').style.borderColor = '#cc0000';
                      return; 
                  }
                  if (pw !== confirm) { 
-                     showError(1, "Passwords do not match."); 
+                     showError(2, "Passwords do not match."); 
                      document.getElementById('confirmPassword').style.borderColor = '#cc0000';
                      return; 
                  }

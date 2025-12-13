@@ -18,6 +18,8 @@ class studentmanager extends Database {
     public $middleName = "";
     public $gender = "";
     public $birthDate = "";
+    // New Property
+    public $nickname = ""; 
 
     public $recitationStudentId;
     public $recitationSubjectCode;
@@ -82,7 +84,7 @@ class studentmanager extends Database {
                 <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;'>
                     <h2 style='color: #D32F2F; text-align: center;'>Verification Code</h2>
                     <p style='font-size: 1.1em; text-align: center;'>Hello " . htmlspecialchars($firstName) . ",</p>
-                    <p style='text-align: center;'>Please enter the code below to verify your account. This code is valid for 1 hour.</p>
+                    <p style='text-align: center;'>Please enter the code below to verify your action. This code is valid for 1 hour.</p>
                     
                     <div style='text-align: center; margin: 30px 0;'>
                         <span style='display: inline-block; padding: 15px 30px; background-color: #f4f4f4; color: #333; border: 2px dashed #D32F2F; font-size: 2em; font-weight: bold; letter-spacing: 5px;'>
@@ -90,7 +92,7 @@ class studentmanager extends Database {
                         </span>
                     </div>
                     
-                    <p style='font-size: 0.9em; color: #777; text-align: center;'>If you did not register for this account, please ignore this email.</p>
+                    <p style='font-size: 0.9em; color: #777; text-align: center;'>If you did not request this, please ignore this email.</p>
                 </div>
                 </body></html>
             ";
@@ -107,12 +109,9 @@ class studentmanager extends Database {
     public function verifyRegistration($email, $code) {
         try {
             $conn = $this->connect();
-            
-            // Get current time in Manila
             $now = new DateTime('now', new DateTimeZone('Asia/Manila'));
             $nowStr = $now->format('Y-m-d H:i:s');
 
-            // Fetch the code linked to the email
             $sql = "SELECT v.id, v.student_id, v.expires_at 
                     FROM user_verification v
                     JOIN students s ON v.student_id = s.student_id
@@ -121,16 +120,9 @@ class studentmanager extends Database {
             $stmt->execute([':email' => $email, ':code' => $code]);
             $record = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if (!$record) {
-                return "Invalid verification code.";
-            }
+            if (!$record) return "Invalid verification code.";
+            if ($nowStr > $record['expires_at']) return "This code has expired.";
 
-            // Check expiration
-            if ($nowStr > $record['expires_at']) {
-                return "This code has expired. Please request a new one.";
-            }
-
-            // Success: Verify User & Delete Code
             $conn->beginTransaction();
             $conn->prepare("UPDATE users SET is_verified = 1 WHERE student_id = ?")->execute([$record['student_id']]);
             $conn->prepare("DELETE FROM user_verification WHERE id = ?")->execute([$record['id']]);
@@ -140,6 +132,76 @@ class studentmanager extends Database {
         } catch (PDOException $e) {
             if ($conn->inTransaction()) $conn->rollBack();
             return "System error: " . $e->getMessage();
+        }
+    }
+
+    // --- FEATURE: VERIFY CODE ONLY (For Profile Edits) ---
+    public function verifyChangeCode($studentId, $code) {
+        try {
+            $conn = $this->connect();
+            $now = new DateTime('now', new DateTimeZone('Asia/Manila'));
+            $nowStr = $now->format('Y-m-d H:i:s');
+
+            $sql = "SELECT id, expires_at FROM user_verification 
+                    WHERE student_id = :studentId AND token = :code";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([':studentId' => $studentId, ':code' => $code]);
+            $record = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$record) return "Invalid verification code.";
+            if ($nowStr > $record['expires_at']) return "This code has expired.";
+
+            // Consume token
+            $conn->prepare("DELETE FROM user_verification WHERE id = ?")->execute([$record['id']]);
+            return true;
+        } catch (PDOException $e) {
+            return "System error: " . $e->getMessage();
+        }
+    }
+
+    // --- FEATURE: UPDATE STUDENT BASIC INFO ---
+    public function updateStudentBasicInfo($studentId, $lastName, $firstName, $middleName, $nickname, $gender) {
+        $sql = "UPDATE students SET lastname = :lname, firstname = :fname, middlename = :mname, nickname = :nname, gender = :gender WHERE student_id = :sid";
+        try {
+            $conn = $this->connect();
+            $stmt = $conn->prepare($sql);
+            return $stmt->execute([
+                ':lname' => $lastName,
+                ':fname' => $firstName,
+                ':mname' => $middleName,
+                ':nname' => $nickname,
+                ':gender' => $gender,
+                ':sid' => $studentId
+            ]);
+        } catch (PDOException $e) {
+            error_log("Update Info Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // --- FEATURE: UPDATE CREDENTIALS (SENSITIVE) ---
+    public function updateStudentCredentials($studentId, $newEmail = null, $newPassword = null) {
+        try {
+            $conn = $this->connect();
+            $conn->beginTransaction();
+
+            if (!empty($newEmail)) {
+                $sql1 = "UPDATE students SET email = :email WHERE student_id = :sid";
+                $conn->prepare($sql1)->execute([':email' => $newEmail, ':sid' => $studentId]);
+            }
+
+            if (!empty($newPassword)) {
+                $hash = password_hash($newPassword, PASSWORD_DEFAULT);
+                $sql2 = "UPDATE users SET password_hash = :hash WHERE student_id = :sid";
+                $conn->prepare($sql2)->execute([':hash' => $hash, ':sid' => $studentId]);
+            }
+
+            $conn->commit();
+            return true;
+        } catch (PDOException $e) {
+            $conn->rollBack();
+            error_log("Update Credentials Error: " . $e->getMessage());
+            return false;
         }
     }
 
@@ -194,12 +256,9 @@ class studentmanager extends Database {
     // --- FEATURE: FORGOT PASSWORD (RESET) ---
     public function resetStudentPassword($email, $code, $newPassword) {
         $conn = $this->connect();
-        
-        // Timezone Check
         $now = new DateTime('now', new DateTimeZone('Asia/Manila'));
         $nowStr = $now->format('Y-m-d H:i:s');
 
-        // 1. Validate Code
         $sql = "SELECT v.id, s.student_id, v.expires_at FROM user_verification v 
                 JOIN students s ON v.student_id = s.student_id 
                 WHERE s.email = :email AND v.token = :code";
@@ -207,19 +266,13 @@ class studentmanager extends Database {
         $stmt->execute([':email' => $email, ':code' => $code]);
         $verify = $stmt->fetch();
 
-        if (!$verify) {
-            return "Invalid verification code.";
-        }
-        if ($nowStr > $verify['expires_at']) {
-            return "Code has expired.";
-        }
+        if (!$verify) return "Invalid verification code.";
+        if ($nowStr > $verify['expires_at']) return "Code has expired.";
 
-        // 2. Update Password
         $hash = password_hash($newPassword, PASSWORD_DEFAULT);
         $upd = $conn->prepare("UPDATE users SET password_hash = :hash WHERE student_id = :sid");
         $upd->execute([':hash' => $hash, ':sid' => $verify['student_id']]);
 
-        // 3. Consume Token
         $conn->prepare("DELETE FROM user_verification WHERE id = ?")->execute([$verify['id']]);
 
         return true;
@@ -458,8 +511,8 @@ class studentmanager extends Database {
             }
 
             // 2. Insert into Students table
-            $sql_student = "INSERT INTO students(student_id, course_id, email, lastname, firstname, middlename, gender, birthdate, date_added)
-                            VALUES(:studentId, :courseId, :email, :lastName, :firstName, :middleName, :gender, :birthDate, NOW())";
+            $sql_student = "INSERT INTO students(student_id, course_id, email, lastname, firstname, middlename, nickname, gender, birthdate, date_added)
+                            VALUES(:studentId, :courseId, :email, :lastName, :firstName, :middleName, :nickname, :gender, :birthDate, NOW())";
             $query_student = $conn->prepare($sql_student);
             $query_student->execute([
                 ":studentId" => $this->studentId,
@@ -468,6 +521,7 @@ class studentmanager extends Database {
                 ":lastName" => $this->lastName,
                 ":firstName" => $this->firstName,
                 ":middleName" => $this->middleName,
+                ":nickname" => $this->nickname,
                 ":gender" => $this->gender,
                 ":birthDate" => $this->birthDate
             ]);
@@ -510,7 +564,7 @@ class studentmanager extends Database {
         $sql_recitation_join = "LEFT JOIN recits r ON s.student_id = r.student_id";
         $sql_class_join = "LEFT JOIN student_enrollments se ON s.student_id = se.student_id LEFT JOIN class_sections c ON se.class_id = c.class_id";
         
-        $sql_select_fields = "s.student_id, s.lastname, s.firstname, s.middlename, s.gender, s.birthdate,
+        $sql_select_fields = "s.student_id, s.lastname, s.firstname, s.middlename, s.nickname, s.gender, s.birthdate,
                              co.course_name, 
                              COUNT(DISTINCT se.class_id) AS total_subjects_enrolled,
                              GROUP_CONCAT(DISTINCT c.class_name SEPARATOR ', ') AS all_class_names";
@@ -524,7 +578,7 @@ class studentmanager extends Database {
             
             $sql_recitation_join = "LEFT JOIN recits r ON s.student_id = r.student_id AND r.subject_code = c.subject_code";
             
-            $sql_select_fields = "s.student_id, s.lastname, s.firstname, s.middlename, s.gender, s.birthdate,
+            $sql_select_fields = "s.student_id, s.lastname, s.firstname, s.middlename, s.nickname, s.gender, s.birthdate,
                                   co.course_name,
                                   c.class_name, c.subject_code, c.class_id,
                                   1 AS total_subjects_enrolled";
@@ -549,7 +603,7 @@ class studentmanager extends Database {
                 $sql_class_join
                 $sql_recitation_join
                 $sql_where
-                GROUP BY s.student_id, s.lastname, s.firstname, s.middlename, s.gender, s.birthdate, co.course_name" .
+                GROUP BY s.student_id, s.lastname, s.firstname, s.middlename, s.nickname, s.gender, s.birthdate, co.course_name" .
                 ($classFilter !== 'all' ? ", c.class_name, c.subject_code, c.class_id" : "") .
                 " ORDER BY {$dbSortColumn} {$dbSortOrder}";
 

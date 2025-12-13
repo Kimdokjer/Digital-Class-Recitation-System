@@ -735,7 +735,7 @@ if(isset($_GET['course_add_success']) || isset($_GET['course_delete_success'])) 
             <h1><?= ucfirst(str_replace('_', ' ', $current_section)) ?></h1>
             <div class="user-menu">
                 <span style="font-size: 30px;" class="material-icons">account_circle</span>
-                <span>Administrator</span>
+                <span>Professor</span>
             </div>
         </nav>
 
