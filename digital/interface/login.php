@@ -330,7 +330,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </head>
 <body>
 
-<a href="index.html" class="home-btn">
+<a href="index.php" class="home-btn">
     <span class="material-icons">arrow_back</span>
     Back to Home
 </a>

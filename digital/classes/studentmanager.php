@@ -1,10 +1,9 @@
 <?php
-// THESE LINES ARE CRITICAL FOR EMAIL TO WORK
+
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-// Check these paths. 
-// __DIR__ . '/../vendor/autoload.php' means "Go up one folder from 'classes', then into 'vendor'"
+
 require_once __DIR__ . '/../vendor/autoload.php'; 
 require_once __DIR__ . '/../config/mail_config.php'; 
 require_once "database.php";
@@ -29,7 +28,7 @@ class studentmanager extends Database {
     public $recitationScore;
     public $recitationMode;
 
-    // --- HELPER: SEND EMAIL VIA PHPMAILER ---
+    
     private function sendEmail($toEmail, $toName, $subject, $htmlBody) {
         $mail = new PHPMailer(true);
 
@@ -58,28 +57,28 @@ class studentmanager extends Database {
         }
     }
 
-    // --- FEATURE: REGISTRATION (SEND CODE) ---
+    
     public function sendVerificationEmail($studentId, $email, $firstName) {
         try {
             $conn = $this->connect();
             
-            // 1. Generate 6-digit code
+           
             $token = random_int(100000, 999999);
             
-            // 2. Set Expiry (Manila Time)
+           
             $expires = new DateTime('now', new DateTimeZone('Asia/Manila')); 
             $expires->add(new DateInterval('PT1H')); 
             $expiresStr = $expires->format('Y-m-d H:i:s');
 
-            // 3. Delete old codes for this student
+            
             $conn->prepare("DELETE FROM user_verification WHERE student_id = ?")->execute([$studentId]);
 
-            // 4. Insert new code
+            
             $sql = "INSERT INTO user_verification (token, student_id, expires_at) VALUES (:token, :studentId, :expires)";
             $stmt = $conn->prepare($sql);
             $stmt->execute([':token' => $token, ':studentId' => $studentId, ':expires' => $expiresStr]);
 
-            // 5. Create Email Body
+           
             $subject = "Your Verification Code - Recitation System";
             $body = "
                 <html><body>
@@ -107,7 +106,7 @@ class studentmanager extends Database {
         }
     }
 
-    // --- FEATURE: REGISTRATION (VERIFY CODE) ---
+   
     public function verifyRegistration($email, $code) {
         try {
             $conn = $this->connect();
@@ -137,7 +136,7 @@ class studentmanager extends Database {
         }
     }
 
-    // --- FEATURE: VERIFY CODE ONLY (For Profile Edits) ---
+    
     public function verifyChangeCode($studentId, $code) {
         try {
             $conn = $this->connect();

@@ -27,8 +27,11 @@ $report_students = [];
 $report_class_details = null;
 $report_student_details = null;
 $report_student_subjects = [];
-$report_class_name = $_GET['report_class_name'] ?? '';
+
+// CHANGED: Using IDs for more accurate filtering
+$report_class_id = $_GET['report_class_id'] ?? '';
 $report_student_id = $_GET['report_student_id'] ?? '';
+$report_student_class_id = $_GET['report_student_class_id'] ?? ''; // New variable for Student Report filter
 
 
 $dashboard_stats = [];
@@ -90,21 +93,43 @@ $allCourses = $manager->fetchAllCourses();
 
 // --- Data Fetching for Reports Page ---
 if ($current_section === 'reports') {
-    if (!empty($report_class_name)) {
-        // Generate Class Report
-        $report_students = $manager->viewStudents('lastName', 'ASC', $report_class_name, '');
+    
+    // 1. CLASS REPORT GENERATION
+    if (!empty($report_class_id)) {
+        // Pass the ID directly to viewStudents
+        $report_students = $manager->viewStudents('lastName', 'ASC', $report_class_id, '');
+        
+        // Find details using ID for display
         foreach ($allClasses as $class) {
-            if ($class['class_name'] === $report_class_name) {
+            if ($class['class_id'] == $report_class_id) {
                 $report_class_details = $class;
                 break;
             }
         }
-    } elseif (!empty($report_student_id)) {
-        // Generate Individual Student Report
+    } 
+    
+    // 2. STUDENT REPORT GENERATION
+    elseif (!empty($report_student_id)) {
         $report_student_details = $manager->fetchStudent($report_student_id);
+        
         if ($report_student_details) {
-            $report_student_subjects = $manager->getStudentEnrolledSubjects($report_student_id);
-            // Loop and attach recitation data to each subject
+            // Get ALL subjects first
+            $all_enrolled = $manager->getStudentEnrolledSubjects($report_student_id);
+            
+            // Filter if a specific class is selected
+            if (!empty($report_student_class_id)) {
+                $report_student_subjects = [];
+                foreach ($all_enrolled as $subj) {
+                    if ($subj['class_id'] == $report_student_class_id) {
+                        $report_student_subjects[] = $subj;
+                    }
+                }
+            } else {
+                // Show all if no filter selected
+                $report_student_subjects = $all_enrolled;
+            }
+
+            // Loop and attach recitation data to the (filtered) subjects
             foreach ($report_student_subjects as $key => $subject) {
                 $recits = $manager->getStudentRecitations($report_student_id, $subject['subject_code']);
                 $avg = $manager->getStudentAverageScore($report_student_id, $subject['subject_code']);
@@ -820,7 +845,6 @@ $students_json = json_encode(array_values($students));
                                     <option value="all">All Classes</option>
                                     <?php
                                     $rec_selected_class_filter = $_GET['class_filter'] ?? 'all';
-                                    // *** FIXED: Loop through raw array and use class_id as value to handle duplicates ***
                                     foreach ($allClasses as $class): 
                                         $display = $class['subject_name_display'] . ' (' . $class['class_name'] . ')';
                                     ?>
@@ -850,7 +874,6 @@ $students_json = json_encode(array_values($students));
                         $params = [];
 
                         if ($rec_selected_class_filter !== 'all') {
-                            // *** FIXED: Filter by class_id ***
                             $where[] = "cs.class_id = :classId";
                             $params[':classId'] = $rec_selected_class_filter;
                         }
@@ -911,7 +934,6 @@ $students_json = json_encode(array_values($students));
                                 <select name="class_filter" id="class_filter" onchange="this.form.submit()">
                                     <option value="all">All Classes</option>
                                     <?php 
-                                    // *** FIXED: Loop through raw array and use class_id as value ***
                                     foreach ($allClasses as $class): 
                                         $display = $class['subject_name_display'] . ' (' . $class['class_name'] . ')';
                                     ?>
@@ -1154,10 +1176,10 @@ $students_json = json_encode(array_values($students));
                                 <form method="GET" action="">
                                     <input type="hidden" name="section" value="reports">
                                     <div class="form-group">
-                                        <select name="report_class_name" required>
+                                        <select name="report_class_id" required>
                                             <option value="">Select Class</option>
                                             <?php foreach ($allClasses as $class): ?>
-                                                <option value="<?= htmlspecialchars($class["class_name"]) ?>" <?= ($report_class_name === $class["class_name"]) ? 'selected' : '' ?>>
+                                                <option value="<?= htmlspecialchars($class["class_id"]) ?>" <?= ($report_class_id == $class["class_id"]) ? 'selected' : '' ?>>
                                                     <?= htmlspecialchars($class["subject_name_display"] . ' (' . $class["class_name"] . ')') ?>
                                                 </option>
                                             <?php endforeach; ?>
@@ -1179,6 +1201,18 @@ $students_json = json_encode(array_values($students));
                                         </datalist>
                                         <input type="hidden" name="report_student_id" id="report_student_id_input">
                                     </div>
+                                    
+                                    <div class="form-group" style="margin-top: 10px;">
+                                        <select name="report_student_class_id">
+                                            <option value="">-- All Enrolled Classes --</option>
+                                            <?php foreach ($allClasses as $class): ?>
+                                                <option value="<?= htmlspecialchars($class["class_id"]) ?>">
+                                                    <?= htmlspecialchars($class["subject_name_display"] . ' (' . $class["class_name"] . ')') ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+
                                     <button type="submit" class="btn-card-add">Generate</button>
                                 </form>
                             </div>
@@ -1192,7 +1226,7 @@ $students_json = json_encode(array_values($students));
                             <p>Western Mindanao State University</p>
                         </div>
                         
-                        <?php if (!empty($report_class_name) && $report_class_details): ?>
+                        <?php if (!empty($report_class_id) && $report_class_details): ?>
                             <h3>Class: <?= htmlspecialchars($report_class_details['class_name']) ?></h3>
                             <p>Subject: <?= htmlspecialchars($report_class_details['subject_name_display']) ?></p>
                             
@@ -1251,7 +1285,7 @@ $students_json = json_encode(array_values($students));
                             <?php endforeach; ?>
                         <?php endif; ?>
                         
-                        <?php if ((!empty($report_class_name) && $report_class_details) || (!empty($report_student_id) && $report_student_details)): ?>
+                        <?php if ((!empty($report_class_id) && $report_class_details) || (!empty($report_student_id) && $report_student_details)): ?>
                         <div style="text-align: center; margin-top: 30px;" id="printReportButton">
                              <button type="button" class="btn btn-print" onclick="window.print()"><span class="material-icons">print</span> Print</button>
                         </div>

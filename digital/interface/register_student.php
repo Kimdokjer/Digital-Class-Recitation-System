@@ -117,6 +117,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             z-index: 0;
         }
 
+        /* --- HOME BUTTON STYLING --- */
+        .home-btn {
+            position: absolute;
+            top: 30px;
+            left: 40px;
+            z-index: 10; /* Ensures it sits above the overlay */
+            color: #ffffff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .home-btn:hover {
+            color: var(--primary-accent);
+            transform: translateX(-5px);
+        }
+
         /* --- CONTAINER CARD --- */
         .container {
             background-color: #ffffff;
@@ -381,9 +403,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         input[type="date"] {
             padding: 10px 15px; /* Adjust slightly for date picker icon */
         }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .home-btn { top: 20px; left: 20px; font-size: 0.9rem; }
+        }
     </style>
 </head>
 <body>
+
+<a href="index.php" class="home-btn">
+    <span class="material-icons">arrow_back</span>
+    Back to Home
+</a>
 
 <div class="container">
     <img src="../images/logowmsu.jpg" alt="Logo" class="logo">
