@@ -152,7 +152,7 @@ class studentmanager extends Database {
             if (!$record) return "Invalid verification code.";
             if ($nowStr > $record['expires_at']) return "This code has expired.";
 
-            // Consume token
+            
             $conn->prepare("DELETE FROM user_verification WHERE id = ?")->execute([$record['id']]);
             return true;
         } catch (PDOException $e) {
