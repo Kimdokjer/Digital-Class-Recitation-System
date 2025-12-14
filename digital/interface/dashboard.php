@@ -820,10 +820,13 @@ $students_json = json_encode(array_values($students));
                                     <option value="all">All Classes</option>
                                     <?php
                                     $rec_selected_class_filter = $_GET['class_filter'] ?? 'all';
-                                    $unique_classes_recs = [];
-                                    foreach ($allClasses as $class) { $unique_classes_recs[$class['class_name']] = $class['subject_name_display'] . ' (' . $class['class_name'] . ')'; }
-                                    foreach ($unique_classes_recs as $className => $subjectDisplay): ?>
-                                        <option value="<?= htmlspecialchars($className) ?>" <?= ($rec_selected_class_filter === $className) ? 'selected' : '' ?>><?= htmlspecialchars($subjectDisplay) ?></option>
+                                    // *** FIXED: Loop through raw array and use class_id as value to handle duplicates ***
+                                    foreach ($allClasses as $class): 
+                                        $display = $class['subject_name_display'] . ' (' . $class['class_name'] . ')';
+                                    ?>
+                                        <option value="<?= $class['class_id'] ?>" <?= ($rec_selected_class_filter == $class['class_id']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($display) ?>
+                                        </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -847,8 +850,9 @@ $students_json = json_encode(array_values($students));
                         $params = [];
 
                         if ($rec_selected_class_filter !== 'all') {
-                            $where[] = "cs.class_name = :className";
-                            $params[':className'] = $rec_selected_class_filter;
+                            // *** FIXED: Filter by class_id ***
+                            $where[] = "cs.class_id = :classId";
+                            $params[':classId'] = $rec_selected_class_filter;
                         }
                         
                         if (!empty($search_query)) {
@@ -906,8 +910,14 @@ $students_json = json_encode(array_values($students));
                                 <label for="class_filter">Class:</label>
                                 <select name="class_filter" id="class_filter" onchange="this.form.submit()">
                                     <option value="all">All Classes</option>
-                                    <?php $unique_classes_view = []; foreach ($allClasses as $class) { $unique_classes_view[$class['class_name']] = $class['subject_name_display'] . ' (' . $class['class_name'] . ')'; } foreach ($unique_classes_view as $className => $subjectDisplay): ?>
-                                    <option value="<?= htmlspecialchars($className) ?>" <?= ($selected_class_filter === $className) ? 'selected' : '' ?>><?= htmlspecialchars($subjectDisplay) ?></option>
+                                    <?php 
+                                    // *** FIXED: Loop through raw array and use class_id as value ***
+                                    foreach ($allClasses as $class): 
+                                        $display = $class['subject_name_display'] . ' (' . $class['class_name'] . ')';
+                                    ?>
+                                    <option value="<?= $class['class_id'] ?>" <?= ($selected_class_filter == $class['class_id']) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($display) ?>
+                                    </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>

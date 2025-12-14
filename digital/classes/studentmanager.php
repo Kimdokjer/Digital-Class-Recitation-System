@@ -601,7 +601,8 @@ class studentmanager extends Database {
             $sql_class_join = "INNER JOIN student_enrollments se ON s.student_id = se.student_id
                                INNER JOIN class_sections c ON se.class_id = c.class_id";
             
-            $whereConditions[] = "c.class_name = :classFilter";
+            // *** FIX: Filter by CLASS ID, not NAME ***
+            $whereConditions[] = "c.class_id = :classFilter";
             $params[':classFilter'] = $classFilter;
             
             $sql_recitation_join = "LEFT JOIN recits r ON s.student_id = r.student_id AND r.subject_code = c.subject_code";
