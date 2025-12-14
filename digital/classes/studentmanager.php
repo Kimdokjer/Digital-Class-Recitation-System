@@ -1,7 +1,10 @@
 <?php
+// THESE LINES ARE CRITICAL FOR EMAIL TO WORK
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+// Check these paths. 
+// __DIR__ . '/../vendor/autoload.php' means "Go up one folder from 'classes', then into 'vendor'"
 require_once __DIR__ . '/../vendor/autoload.php'; 
 require_once __DIR__ . '/../config/mail_config.php'; 
 require_once "database.php";
