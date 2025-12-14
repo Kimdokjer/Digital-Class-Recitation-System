@@ -230,105 +230,118 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
     }
 }
 
+// =========================================================
+// UPDATED ACADEMICS LOGIC (WITH DUPLICATE & DELETE CHECKS)
+// =========================================================
+
+// 1. ADD CLASS
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_POST['form_action'] === 'add_class') {
     $class_name = trim(htmlspecialchars($_POST['class_name'] ?? ''));
     $subject_code = trim(htmlspecialchars($_POST['subject_code'] ?? ''));
 
     if (empty($class_name) || empty($subject_code)) {
-        $add_student_errors['general_add_class'] = "Both Class Name and Subject are required.";
+        $add_student_errors['academics_error'] = "Both Class Name and Subject are required.";
     } else {
         if ($manager->addClassSection($class_name, $subject_code)) {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_classes&class_add_success=true");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_classes&msg_type=success&msg=" . urlencode("Class '$class_name' added successfully!"));
             exit;
         } else {
-            $add_student_errors['general_add_class'] = "Failed to add class. The class name might already exist.";
+            $add_student_errors['academics_error'] = "Error: The Class Name '$class_name' already exists.";
         }
     }
 }
 
+// 2. DELETE CLASS
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_POST['form_action'] === 'confirm_delete_class') {
     $class_id_to_delete = $_POST['class_id_to_delete_confirmed'] ?? null;
     
     if ($class_id_to_delete) {
         if ($manager->deleteClassSection($class_id_to_delete)) {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_classes&class_delete_success=true");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_classes&msg_type=success&msg=" . urlencode("Class section deleted successfully."));
             exit;
         } else {
-             $add_student_errors['general_delete_class'] = "Failed to delete class. Students might be enrolled in it.";
+             $add_student_errors['academics_error'] = "Cannot delete Class. There are students enrolled in it, or recitation records exist.";
         }
     } else {
-        $add_student_errors['general_delete_class'] = "No class section selected for deletion.";
+        $add_student_errors['academics_error'] = "No class section selected for deletion.";
     }
 }
 
+// 3. ADD SUBJECT
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_POST['form_action'] === 'add_subject') {
     $subject_code = trim(htmlspecialchars($_POST['subject_code'] ?? ''));
     $subject_name = trim(htmlspecialchars($_POST['subject_name'] ?? ''));
     
     if (empty($subject_code) || empty($subject_name)) {
-        $add_student_errors['general_add_subject'] = "Both Subject Code and Subject Name are required.";
+        $add_student_errors['academics_error'] = "Both Subject Code and Subject Name are required.";
     } else {
         if ($manager->addSubject($subject_code, $subject_name)) {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_classes&subject_add_success=true");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_classes&msg_type=success&msg=" . urlencode("Subject '$subject_name' added successfully!"));
             exit;
         } else {
-            $add_student_errors['general_add_subject'] = "Failed to add subject. The Subject Code might already exist.";
+            $add_student_errors['academics_error'] = "Error: The Subject Code '$subject_code' already exists.";
         }
     }
 }
 
+// 4. DELETE SUBJECT
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_POST['form_action'] === 'confirm_delete_subject') {
     $subject_code_to_delete = $_POST['subject_code_to_delete_confirmed'] ?? null;
     
     if ($subject_code_to_delete) {
         if ($manager->deleteSubject($subject_code_to_delete)) {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_classes&subject_delete_success=true");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_classes&msg_type=success&msg=" . urlencode("Subject deleted successfully."));
             exit;
         } else {
-             $add_student_errors['general_delete_subject'] = "Failed to delete subject. It might be linked to a class section.";
+             $add_student_errors['academics_error'] = "Cannot delete Subject. It is currently linked to active Class Sections or Recitations.";
         }
     } else {
-        $add_student_errors['general_delete_subject'] = "No subject selected for deletion.";
+        $add_student_errors['academics_error'] = "No subject selected for deletion.";
     }
 }
 
+// 5. ADD COURSE
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_POST['form_action'] === 'add_course') {
     $course_name = trim(htmlspecialchars($_POST['course_name'] ?? ''));
     
     if (empty($course_name)) {
-        $add_student_errors['general_add_course'] = "Course Name is required.";
+        $add_student_errors['academics_error'] = "Course Name is required.";
     } else {
         if ($manager->addCourse($course_name)) {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_classes&course_add_success=true");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_classes&msg_type=success&msg=" . urlencode("Course '$course_name' added successfully!"));
             exit;
         } else {
-            $add_student_errors['general_add_course'] = "Failed to add course. The Course Name might already exist.";
+            $add_student_errors['academics_error'] = "Error: The Course '$course_name' already exists.";
         }
     }
 }
 
+// 6. DELETE COURSE
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_POST['form_action'] === 'confirm_delete_course') {
     $course_id_to_delete = $_POST['course_id_to_delete_confirmed'] ?? null;
     
     if ($course_id_to_delete) {
         if ($manager->deleteCourse($course_id_to_delete)) {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_classes&course_delete_success=true");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_classes&msg_type=success&msg=" . urlencode("Course deleted successfully."));
             exit;
         } else {
-             $add_student_errors['general_delete_course'] = "Failed to delete course. Students might be enrolled in it.";
+             $add_student_errors['academics_error'] = "Cannot delete Course. There are students currently enrolled in this course.";
         }
     } else {
-        $add_student_errors['general_delete_course'] = "No course selected for deletion.";
+        $add_student_errors['academics_error'] = "No course selected for deletion.";
     }
 }
 
+// Re-fetch data if a success message is present (to update the lists)
+if(isset($_GET['msg_type'])) { 
+    $allClasses = $manager->fetchAllClasses(); 
+    $classes = $allClasses;
+    $allSubjects = $manager->fetchAllSubjects(); 
+    $allCourses = $manager->fetchAllCourses(); 
+}
 
 $students = $manager->viewStudents($sort_column, $sort_order, $selected_class_filter, $search_query);
 $students_json = json_encode(array_values($students));
-
-if(isset($_GET['class_add_success']) || isset($_GET['class_delete_success'])) { $allClasses = $manager->fetchAllClasses(); $classes = $allClasses; }
-if(isset($_GET['subject_add_success']) || isset($_GET['subject_delete_success'])) { $allSubjects = $manager->fetchAllSubjects(); }
-if(isset($_GET['course_add_success']) || isset($_GET['course_delete_success'])) { $allCourses = $manager->fetchAllCourses(); }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1026,10 +1039,20 @@ if(isset($_GET['course_add_success']) || isset($_GET['course_delete_success'])) 
             
             <?php elseif ($current_section === 'manage_classes'): ?>
                 <div class="container">
-                    <?php if (isset($_GET['class_add_success'])): ?><p class="success-message">Class added!</p><?php endif; ?>
-                    <?php if (isset($_GET['subject_add_success'])): ?><p class="success-message">Subject added!</p><?php endif; ?>
-                    <?php if (isset($_GET['course_add_success'])): ?><p class="success-message">Course added!</p><?php endif; ?>
+                    
+                    <?php if (isset($_GET['msg_type']) && $_GET['msg_type'] == 'success'): ?>
+                        <div class="success-message" style="text-align: center; margin-bottom: 20px;">
+                            <span class="material-icons" style="vertical-align: bottom;">check_circle</span> 
+                            <?= htmlspecialchars($_GET['msg']) ?>
+                        </div>
+                    <?php endif; ?>
 
+                    <?php if (isset($add_student_errors['academics_error'])): ?>
+                        <div class="error-message" style="text-align: center; margin-bottom: 20px;">
+                            <span class="material-icons" style="vertical-align: bottom;">error</span> 
+                            <?= htmlspecialchars($add_student_errors['academics_error']) ?>
+                        </div>
+                    <?php endif; ?>
                     <div class="manage-grid">
                         <div class="manage-card">
                             <h3>Courses</h3>
@@ -1344,7 +1367,7 @@ if(isset($_GET['course_add_success']) || isset($_GET['course_delete_success'])) 
         if (pickerButtons) {
             pickerButtons.forEach(button => {
                 button.addEventListener('click', (event) => {
-                     if(resultDisplay) resultDisplay.innerHTML = '<span class="material-icons" style="font-size: 2em; animation: spin 1s linear infinite;">hourglass_empty</span> Picking...';
+                      if(resultDisplay) resultDisplay.innerHTML = '<span class="material-icons" style="font-size: 2em; animation: spin 1s linear infinite;">hourglass_empty</span> Picking...';
                     const mode = event.target.closest('button').dataset.mode;
                     setTimeout(() => pickStudent(mode), 50);
                 });
