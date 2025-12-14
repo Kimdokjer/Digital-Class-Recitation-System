@@ -6,7 +6,7 @@ $student_form_data = [];
 $register_errors = [];
 $courses = $manager->fetchAllCourses();
 
-// State variables
+
 $showVerifyModal = false;
 $verificationSuccess = false;
 $verificationError = "";
@@ -14,7 +14,7 @@ $emailForVerification = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
-    // --- HANDLE VERIFICATION ---
+    
     if (isset($_POST['action']) && $_POST['action'] === 'verify') {
         $email = trim($_POST['verify_email']);
         $code = trim($_POST['verify_code']);
@@ -35,11 +35,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
     
-    // --- HANDLE REGISTRATION ---
+  
     elseif (isset($_POST['action']) && $_POST['action'] === 'register') {
         $student_form_data = $_POST;
         
-        // Validation
+    
         if (empty($student_form_data["studentId"])) $register_errors["studentId"] = "Required";
         if (empty($student_form_data["email"])) $register_errors["email"] = "Required";
         if ($student_form_data["password"] !== $student_form_data["confirmPassword"]) $register_errors["confirmPassword"] = "Passwords mismatch";
@@ -50,7 +50,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $manager->password = $student_form_data["password"];
             $manager->lastName = $student_form_data["lastName"];
             $manager->firstName = $student_form_data["firstName"];
-            // Middle name is optional, defaults to empty string if not set
+ 
             $manager->middleName = $student_form_data["middleName"] ?? "";
             $manager->gender = ($student_form_data["gender"] === 'Other') ? $student_form_data["genderSpecify"] : $student_form_data["gender"];
             $manager->birthDate = $student_form_data["birthDate"];
@@ -79,21 +79,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <style>
-        /* --- THEME VARIABLES --- */
+       
         :root {
-            --primary-accent: #cc0000;       /* Crimson Red */
-            --primary-accent-hover: #990000; /* Darker Red */
+            --primary-accent: #cc0000;       
+            --primary-accent-hover: #990000; 
             --text-dark: #333333;
             --text-muted: #666666;
             --bg-overlay: rgba(0, 0, 0, 0.65);
         }
 
-        /* --- BASE STYLES --- */
+
         * { box-sizing: border-box; }
         
         body {
             font-family: 'Montserrat', sans-serif;
-            /* Background Image setup */
+     
             background-image: url('../images/landingbg.jpg');
             background-size: cover;
             background-position: center;
@@ -108,7 +108,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             position: relative;
         }
 
-        /* Dark Overlay */
+      
         body::before {
             content: "";
             position: absolute;
@@ -117,12 +117,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             z-index: 0;
         }
 
-        /* --- HOME BUTTON STYLING --- */
+
         .home-btn {
             position: absolute;
             top: 30px;
             left: 40px;
-            z-index: 10; /* Ensures it sits above the overlay */
+            z-index: 10; 
             color: #ffffff;
             text-decoration: none;
             display: flex;
@@ -139,7 +139,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             transform: translateX(-5px);
         }
 
-        /* --- CONTAINER CARD --- */
+      
         .container {
             background-color: #ffffff;
             padding: 40px;
@@ -149,12 +149,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             max-width: 500px;
             text-align: center;
             position: relative;
-            z-index: 1; /* Above overlay */
+            z-index: 1; 
             border-top: 6px solid var(--primary-accent);
             animation: fadeUp 0.6s ease-out;
         }
 
-        /* --- HEADER & LOGO --- */
+  
         .logo {
             width: 90px;
             height: 90px;
@@ -170,7 +170,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             font-weight: 700;
         }
 
-        /* --- PROGRESS BAR --- */
+   
         .progress-container {
             display: flex;
             justify-content: space-between;
@@ -216,7 +216,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             box-shadow: 0 0 0 3px rgba(204,0,0,0.2);
         }
 
-        /* --- FORM STEPS --- */
+     
         .step { display: none; animation: slideIn 0.4s ease-out; }
         .step.active { display: block; }
         
@@ -229,7 +229,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* --- INPUTS --- */
+       
         .form-group {
             text-align: left;
             margin-bottom: 15px;
@@ -250,7 +250,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #f0f0f0;
-            border-radius: 50px; /* Pill shape */
+            border-radius: 50px; 
             background-color: #f9f9f9;
             font-size: 0.95rem;
             font-family: 'Montserrat', sans-serif;
@@ -266,11 +266,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             box-shadow: 0 4px 15px rgba(204, 0, 0, 0.1);
         }
 
-        /* Toggle Password Eye */
+     
         .toggle-pw {
             position: absolute;
             right: 15px;
-            bottom: 12px; /* Adjusted for input height */
+            bottom: 12px;
             color: #999;
             cursor: pointer;
             font-size: 20px;
@@ -278,7 +278,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         .toggle-pw:hover { color: var(--primary-accent); }
 
-        /* --- BUTTONS --- */
+       
         .nav-buttons {
             display: flex;
             justify-content: space-between;
@@ -286,7 +286,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             align-items: center;
         }
 
-        /* Circle Arrow Button */
+        
         .btn-arrow {
             background: var(--primary-accent);
             color: white;
@@ -307,7 +307,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             box-shadow: 0 6px 15px rgba(204, 0, 0, 0.4);
         }
 
-        /* Back Button */
+        
         .btn-back {
             background: #f0f0f0;
             color: #555;
@@ -319,7 +319,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             transform: translateY(-3px);
         }
 
-        /* Full Width Submit */
+       
         .btn-submit {
             background: var(--primary-accent);
             color: white;
@@ -354,14 +354,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             font-weight: 600;
         }
 
-        /* --- MODALS --- */
+       
         .modal {
             display: none;
             position: fixed;
             z-index: 999;
             left: 0; top: 0;
             width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); /* Darker backdrop */
+            background: rgba(0,0,0,0.7); 
             align-items: center;
             justify-content: center;
             backdrop-filter: blur(4px);
@@ -381,13 +381,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         .modal-content h3 { color: var(--primary-accent); margin-top: 0; }
 
-        /* Scrollbar for terms */
+        
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #999; }
         
-        /* Links */
+     
         a { color: var(--primary-accent); text-decoration: none; font-weight: 600; }
         a:hover { text-decoration: underline; }
 
@@ -399,12 +399,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             font-size: 0.9rem;
         }
         
-        /* Specific tweaks for date input */
+        
         input[type="date"] {
-            padding: 10px 15px; /* Adjust slightly for date picker icon */
+            padding: 10px 15px; 
         }
 
-        /* Responsive */
+      
         @media (max-width: 480px) {
             .home-btn { top: 20px; left: 20px; font-size: 0.9rem; }
         }
@@ -622,35 +622,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         inputs.forEach(input => {
             if (input.hasAttribute('required') && !input.value) {
-                input.style.borderColor = '#cc0000'; // Red border on error
+                input.style.borderColor = '#cc0000'; 
                 valid = false;
             } else {
-                input.style.borderColor = '#f0f0f0'; // Reset
+                input.style.borderColor = '#f0f0f0'; 
             }
         });
 
-        // Validation for Step 1 (Personal Details)
+       
         if (step === 1 && valid) {
             const bdateInput = document.getElementById('birthDate');
             if(bdateInput.value) {
                 const selectedDate = new Date(bdateInput.value);
                 const today = new Date();
-                today.setHours(0,0,0,0); // normalize today for comparison
+                today.setHours(0,0,0,0); 
                 
                 if(selectedDate > today) {
                     showError(1, "Birth date cannot be in the future.");
                     bdateInput.style.borderColor = '#cc0000';
-                    return; // Stop here
+                    return; 
                 }
             }
         }
 
-        // Validation for Step 2 (Account Details)
+        
         if (step === 2) {
             const pw = document.getElementById('password').value;
             const confirm = document.getElementById('confirmPassword').value;
             
-            // Allow if inputs are valid so far
+           
             if (valid) {
                  if (pw.length < 8) { 
                      showError(2, "Password must be at least 8 characters."); 

@@ -3,7 +3,7 @@ session_start();
 
 require_once "../classes/studentmanager.php"; 
 
-// --- START: NEW NOTIFICATION PHP ---
+
 if (!isset($_SESSION['loggedin']) || $_SESSION['user_role'] !== 'student') {
     header("Location: login.php");
     exit;
@@ -15,7 +15,7 @@ $current_student_id = $_SESSION['student_id'];
 try {
     $notif_conn = $manager->connect();
     
-    // --- Check if a "mark all read" request is being made ---
+  
     if (isset($_GET['mark_read']) && $_GET['mark_read'] === 'all' && isset($_SERVER['HTTP_X_REQUESTED_WITH'])) {
         $stmt_mark_all = $notif_conn->prepare("
             UPDATE notifications 
@@ -27,7 +27,7 @@ try {
         exit;
     }
     
-    // --- Check if a single notification is being marked as read ---
+  
     if (isset($_GET['mark_read']) && is_numeric($_GET['mark_read'])) {
         $notif_id_to_mark = $_GET['mark_read'];
         $stmt_mark_one = $notif_conn->prepare("
@@ -37,7 +37,7 @@ try {
         ");
         $stmt_mark_one->execute([':notif_id' => $notif_id_to_mark, ':student_id' => $current_student_id]);
         
-        // Find the original link
+      
         $stmt_get_link = $notif_conn->prepare("SELECT link FROM notifications WHERE notification_id = ?");
         $stmt_get_link->execute([$notif_id_to_mark]);
         $notif_link = $stmt_get_link->fetchColumn();
@@ -50,7 +50,7 @@ try {
         exit;
     }
     
-    // --- Fetch notifications ---
+  
     $stmt_notif = $notif_conn->prepare("
         SELECT * FROM notifications 
         WHERE student_id = :studentId 
@@ -71,14 +71,14 @@ try {
     $notifications = [];
     $unread_count = 0;
 }
-// --- END: NEW NOTIFICATION PHP ---
 
 
-// --- Original Page Logic ---
+
+
 $studentId = $_SESSION['username']; 
 $studentData = $manager->fetchStudent($studentId);
 
-// --- NEW LOGIC: DETERMINE DISPLAY NAME (NICKNAME VS FIRSTNAME) ---
+
 $displayName = !empty($studentData['nickname']) ? $studentData['nickname'] : ($studentData['firstname'] ?? 'Student');
 
 $enrolledSubjects = $manager->getStudentEnrolledSubjects($studentId); 
@@ -125,13 +125,13 @@ header('X-Frame-Options: SAMEORIGIN');
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <style>
-        /* --- THEME VARIABLES --- */
+        
         :root {
-            --primary: #cc0000;           /* Crimson Red */
-            --primary-dark: #8a0000;      /* Darker Red */
-            --bg-body: #eef2f5;           /* Cool Light Gray Background */
-            --bg-sidebar: #cc0000;        /* Red Sidebar */
-            --text-sidebar: #ffffff;      /* White text for sidebar */
+            --primary: #cc0000;           
+            --primary-dark: #8a0000;      
+            --bg-body: #eef2f5;           
+            --bg-sidebar: #cc0000;        
+            --text-sidebar: #ffffff;      
             --text-main: #333333;
             --text-muted: #666666;
             --border-color: #e0e0e0;
@@ -149,7 +149,7 @@ header('X-Frame-Options: SAMEORIGIN');
             color: var(--text-main);
         }
 
-        /* --- SIDEBAR --- */
+        
         .sidebar { 
             width: 250px; 
             background-color: var(--bg-sidebar); 
@@ -206,13 +206,13 @@ header('X-Frame-Options: SAMEORIGIN');
             transition: color 0.2s;
         }
         
-        /* Hover State */
+        
         .sidebar-nav ul li a:hover { 
             background-color: rgba(255,255,255,0.1); 
             color: white; 
         }
         
-        /* Active State */
+        
         .sidebar-nav ul li a.active { 
             background-color: var(--bg-body); 
             color: var(--primary); 
@@ -223,7 +223,7 @@ header('X-Frame-Options: SAMEORIGIN');
         }
         .sidebar-nav ul li a.active .material-icons { color: var(--primary); }
 
-        /* LOGOUT SECTION - REMOVED BOX STYLING */
+       
         .logout-container { 
             padding: 10px 0; 
             border-top: 1px solid rgba(255,255,255,0.2); 
@@ -232,7 +232,7 @@ header('X-Frame-Options: SAMEORIGIN');
         .logout-btn { 
             display: flex; 
             align-items: center;
-            padding: 14px 20px; /* Match regular links */
+            padding: 14px 20px; 
             width: 100%;
             background: none; 
             border: none;
@@ -241,7 +241,7 @@ header('X-Frame-Options: SAMEORIGIN');
             font-weight: 500; 
             text-decoration: none; 
             transition: background 0.3s ease; 
-            justify-content: flex-start; /* Left align like links */
+            justify-content: flex-start; 
             cursor: pointer;
             border-left: 4px solid transparent;
         }
@@ -255,10 +255,10 @@ header('X-Frame-Options: SAMEORIGIN');
             color: white; 
         }
 
-        /* --- MAIN WRAPPER --- */
+      
         .main-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
 
-        /* --- TOP NAVBAR --- */
+       
         .top-navbar { 
             background-color: #ffffff; 
             padding: 12px 30px; 
@@ -289,7 +289,7 @@ header('X-Frame-Options: SAMEORIGIN');
             font-size: 1em;
         }
 
-        /* --- CONTENT AREA --- */
+       
         .main-content { padding: 30px; flex-grow: 1; }
 
         .content-header { 
@@ -299,7 +299,7 @@ header('X-Frame-Options: SAMEORIGIN');
         .content-header h2 { margin: 0; font-size: 1.5em; color: var(--text-main); }
         .breadcrumb { font-size: 0.9em; color: var(--text-muted); }
 
-        /* --- NOTIFICATIONS --- */
+       
         .notification-bell { position: relative; cursor: pointer; }
         .notification-bell .material-icons { font-size: 24px; color: #757575; transition: color 0.2s; }
         .notification-bell:hover .material-icons { color: var(--primary); }
@@ -348,7 +348,7 @@ header('X-Frame-Options: SAMEORIGIN');
         .notification-item small { font-size: 0.7em; color: #999; margin-top: 4px; display: block; }
         .no-notifications { text-align: center; padding: 20px; color: #999; font-size: 0.9em; }
 
-        /* --- COURSE CARDS --- */
+       
         .section-title { font-size: 1.1em; color: var(--text-muted); margin-bottom: 20px; font-weight: 600; }
         .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
 
@@ -392,7 +392,7 @@ header('X-Frame-Options: SAMEORIGIN');
         .progress-bar-fill { background-color: var(--primary); height: 100%; transition: width 0.5s ease; }
         .progress-text { font-size: 0.75em; color: #999; margin-top: 4px; text-align: right; display: block; }
 
-        /* --- RECITATION DETAIL VIEW --- */
+       
         .back-link { 
             display: inline-flex; align-items: center; 
             margin-bottom: 20px; color: var(--text-muted); 
@@ -433,7 +433,7 @@ header('X-Frame-Options: SAMEORIGIN');
             border-radius: 10px; color: var(--text-muted); box-shadow: var(--shadow-subtle); 
         }
 
-        /* Mobile */
+      
         @media (max-width: 768px) {
             body { flex-direction: column; }
             .sidebar { 

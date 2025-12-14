@@ -22,20 +22,20 @@ $selected_class_filter = $_GET['class_filter'] ?? 'all';
 $search_query = trim($_GET['search_query'] ?? '');
 $current_section = $_GET['section'] ?? 'dashboard';
 
-// --- Variables for Report Generation ---
+
 $report_students = [];
 $report_class_details = null;
 $report_student_details = null;
 $report_student_subjects = [];
 
-// CHANGED: Using IDs for more accurate filtering
+
 $report_class_id = $_GET['report_class_id'] ?? '';
 $report_student_id = $_GET['report_student_id'] ?? '';
-$report_student_class_id = $_GET['report_student_class_id'] ?? ''; // New variable for Student Report filter
+$report_student_class_id = $_GET['report_student_class_id'] ?? ''; 
 
 
 $dashboard_stats = [];
-// Variables for Charts
+
 $chart_engaged = 0;
 $chart_total = 0;
 $chart_labels_json = '[]';
@@ -45,7 +45,7 @@ try {
     $conn = $manager->connect();
     
     if ($current_section === 'dashboard') {
-        // 1. Basic Stats
+
         $stmt_students = $conn->query("SELECT COUNT(student_id) AS totalStudents FROM students");
         $dashboard_stats['totalStudents'] = $stmt_students->fetchColumn();
         $chart_total = $dashboard_stats['totalStudents'];
@@ -63,7 +63,7 @@ try {
         $chart_engaged = $engagedStudents;
         $dashboard_stats['engagementRate'] = ($dashboard_stats['totalStudents'] > 0) ? round(($engagedStudents / $dashboard_stats['totalStudents']) * 100) : 0;
 
-        // 2. Data for Bar Chart (Recitations per Subject)
+
         $stmt_chart = $conn->query("SELECT subject_code, COUNT(recit_id) as count FROM recits GROUP BY subject_code");
         $subject_stats = $stmt_chart->fetchAll(PDO::FETCH_ASSOC);
         
@@ -91,15 +91,15 @@ $students_for_enrollment = $manager->viewStudents('lastName', 'ASC', 'all', '');
 $allSubjects = $manager->fetchAllSubjects();
 $allCourses = $manager->fetchAllCourses();
 
-// --- Data Fetching for Reports Page ---
+
 if ($current_section === 'reports') {
     
-    // 1. CLASS REPORT GENERATION
+
     if (!empty($report_class_id)) {
-        // Pass the ID directly to viewStudents
+
         $report_students = $manager->viewStudents('lastName', 'ASC', $report_class_id, '');
         
-        // Find details using ID for display
+
         foreach ($allClasses as $class) {
             if ($class['class_id'] == $report_class_id) {
                 $report_class_details = $class;
@@ -108,15 +108,15 @@ if ($current_section === 'reports') {
         }
     } 
     
-    // 2. STUDENT REPORT GENERATION
+  
     elseif (!empty($report_student_id)) {
         $report_student_details = $manager->fetchStudent($report_student_id);
         
         if ($report_student_details) {
-            // Get ALL subjects first
+
             $all_enrolled = $manager->getStudentEnrolledSubjects($report_student_id);
             
-            // Filter if a specific class is selected
+      
             if (!empty($report_student_class_id)) {
                 $report_student_subjects = [];
                 foreach ($all_enrolled as $subj) {
@@ -125,11 +125,11 @@ if ($current_section === 'reports') {
                     }
                 }
             } else {
-                // Show all if no filter selected
+               
                 $report_student_subjects = $all_enrolled;
             }
 
-            // Loop and attach recitation data to the (filtered) subjects
+           
             foreach ($report_student_subjects as $key => $subject) {
                 $recits = $manager->getStudentRecitations($report_student_id, $subject['subject_code']);
                 $avg = $manager->getStudentAverageScore($report_student_id, $subject['subject_code']);
@@ -170,7 +170,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
                     
                     if ($insert_stmt->execute()) {
                         
-                        // --- Send email and bell notification to the student ---
+                        
                         $manager->sendEnrollmentNotification($studentIdToEnroll, $classIdToEnroll);
 
                         header("Location: " . $_SERVER['PHP_SELF'] . "?section=view_students&enroll_success=true" . ($selected_class_filter !== 'all' ? '&class_filter=' . urlencode($selected_class_filter) : ''));
@@ -221,7 +221,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
     $reason = $_POST['deletion_reason_confirmed'] ?? ''; // Capture the reason
     
     if ($studentIdToDelete) {
-        // PASS THE REASON HERE
+        
         if ($manager->deleteStudent($studentIdToDelete, $reason)) {
             header("Location: " . $_SERVER['PHP_SELF'] . "?section=delete_student&delete_success=true");
             exit;
@@ -233,14 +233,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
     }
 }
 
-// --- WITHDRAW STUDENT ---
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_POST['form_action'] === 'withdraw_student') {
     $studentIdToWithdraw = $_POST['student_id_to_withdraw'] ?? null;
     $classIdToWithdraw = $_POST['class_id_to_withdraw'] ?? null;
     $withdraw_reason = trim(htmlspecialchars($_POST['withdraw_reason'] ?? 'No reason provided'));
 
     if ($studentIdToWithdraw && $classIdToWithdraw) {
-        // Pass the $withdraw_reason to the manager function
+
         if ($manager->withdrawStudentFromClass($studentIdToWithdraw, $classIdToWithdraw, $withdraw_reason)) {
             $redirect_url = $_SERVER['PHP_SELF'] . "?section=view_students&withdraw_success=true";
             if ($selected_class_filter !== 'all') { $redirect_url .= "&class_filter=" . urlencode($selected_class_filter); }
@@ -255,11 +255,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
     }
 }
 
-// =========================================================
-// UPDATED ACADEMICS LOGIC (WITH DUPLICATE & DELETE CHECKS)
-// =========================================================
 
-// 1. ADD CLASS
+
+
+
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_POST['form_action'] === 'add_class') {
     $class_name = trim(htmlspecialchars($_POST['class_name'] ?? ''));
     $subject_code = trim(htmlspecialchars($_POST['subject_code'] ?? ''));
@@ -276,7 +276,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
     }
 }
 
-// 2. DELETE CLASS
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_POST['form_action'] === 'confirm_delete_class') {
     $class_id_to_delete = $_POST['class_id_to_delete_confirmed'] ?? null;
     
@@ -292,7 +292,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
     }
 }
 
-// 3. ADD SUBJECT
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_POST['form_action'] === 'add_subject') {
     $subject_code = trim(htmlspecialchars($_POST['subject_code'] ?? ''));
     $subject_name = trim(htmlspecialchars($_POST['subject_name'] ?? ''));
@@ -309,7 +309,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
     }
 }
 
-// 4. DELETE SUBJECT
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_POST['form_action'] === 'confirm_delete_subject') {
     $subject_code_to_delete = $_POST['subject_code_to_delete_confirmed'] ?? null;
     
@@ -325,7 +325,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
     }
 }
 
-// 5. ADD COURSE
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_POST['form_action'] === 'add_course') {
     $course_name = trim(htmlspecialchars($_POST['course_name'] ?? ''));
     
@@ -341,7 +341,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
     }
 }
 
-// 6. DELETE COURSE
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_POST['form_action'] === 'confirm_delete_course') {
     $course_id_to_delete = $_POST['course_id_to_delete_confirmed'] ?? null;
     
@@ -357,7 +357,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
     }
 }
 
-// Re-fetch data if a success message is present (to update the lists)
+
 if(isset($_GET['msg_type'])) { 
     $allClasses = $manager->fetchAllClasses(); 
     $classes = $allClasses;
@@ -378,13 +378,13 @@ $students_json = json_encode(array_values($students));
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* --- THEME VARIABLES --- */
+
         :root {
-            --primary: #cc0000;           /* Crimson Red */
-            --primary-dark: #8a0000;      /* Darker Red */
-            --bg-body: #eef2f5;           /* Cool Light Gray Background */
-            --bg-sidebar: #cc0000;        /* Red Sidebar */
-            --text-sidebar: #ffffff;      /* White text for sidebar */
+            --primary: #cc0000;           
+            --primary-dark: #8a0000;      
+            --bg-body: #eef2f5;           
+            --bg-sidebar: #cc0000;        
+            --text-sidebar: #ffffff;      
             --text-main: #333333;
             --text-muted: #666666;
             --border-color: #e0e0e0;
@@ -402,7 +402,7 @@ $students_json = json_encode(array_values($students));
             color: var(--text-main);
         }
 
-        /* --- SIDEBAR --- */
+      
         .sidebar { 
             width: 260px; 
             background-color: var(--bg-sidebar); 
@@ -459,13 +459,13 @@ $students_json = json_encode(array_values($students));
             transition: color 0.2s;
         }
         
-        /* Hover State */
+        
         .sidebar-nav ul li a:hover { 
             background-color: rgba(255,255,255,0.1); 
             color: white; 
         }
         
-        /* Active State - "Folder Tab" Effect */
+        
         .sidebar-nav ul li a.active { 
             background-color: var(--bg-body); 
             color: var(--primary); 
@@ -476,7 +476,7 @@ $students_json = json_encode(array_values($students));
         }
         .sidebar-nav ul li a.active .material-icons { color: var(--primary); }
 
-        /* LOGOUT SECTION - NO BOX */
+        
         .logout-container { 
             padding: 10px 0; 
             border-top: 1px solid rgba(255,255,255,0.2); 
@@ -508,10 +508,10 @@ $students_json = json_encode(array_values($students));
             color: white;
         }
 
-        /* --- MAIN WRAPPER --- */
+       
         .main-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
 
-        /* --- TOP NAVBAR --- */
+       
         .top-navbar { 
             background-color: #ffffff; 
             padding: 15px 30px; 
@@ -530,18 +530,18 @@ $students_json = json_encode(array_values($students));
         .user-menu span { font-weight: 600; color: var(--text-main); }
         .user-menu .material-icons { color: var(--primary); font-size: 32px; }
 
-        /* --- CONTENT AREA --- */
+        
         .main-content { padding: 30px; flex-grow: 1; }
         .container { max-width: 1200px; margin: 0 auto; }
         
-        /* Titles & Headers */
+        
         h1.section-title {
             font-size: 1.8em; color: var(--text-main); margin-bottom: 25px;
             font-weight: 700; border-bottom: 3px solid var(--primary);
             padding-bottom: 5px; display: inline-block;
         }
 
-        /* --- DASHBOARD CARDS --- */
+       
         .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; margin-bottom: 30px; }
         .card { 
             background-color: #ffffff; 
@@ -557,12 +557,12 @@ $students_json = json_encode(array_values($students));
         .card h3 { margin: 0 0 10px 0; font-size: 0.95em; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
         .card .card-number { font-size: 2.2em; font-weight: 700; color: var(--text-main); margin: 0; }
 
-        /* --- CHARTS --- */
+       
         .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
         .chart-container { background-color: white; padding: 25px; border-radius: 12px; box-shadow: var(--shadow-subtle); border: 1px solid var(--border-color); }
         .chart-container h3 { margin-top: 0; text-align: center; color: var(--text-main); font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; }
 
-        /* --- TABLES --- */
+        
         table { 
             width: 100%; border-collapse: separate; border-spacing: 0; 
             background: #fff; border-radius: 12px; 
@@ -583,12 +583,12 @@ $students_json = json_encode(array_values($students));
         .text-center { text-align: center; }
         .text-right { text-align: right; }
 
-        /* --- BADGES --- */
+     
         .status-badge { display: inline-block; padding: 5px 12px; font-size: 0.75em; font-weight: 700; border-radius: 50px; text-transform: uppercase; }
         .status-enrolled { background-color: #e8f5e9; color: #2e7d32; }
         .status-not-enrolled { background-color: #fff3e0; color: #e65100; }
 
-        /* --- FORMS & INPUTS --- */
+      
         .form-container { 
             background-color: #ffffff; padding: 40px; 
             border-radius: 12px; box-shadow: var(--shadow-subtle); 
@@ -612,7 +612,7 @@ $students_json = json_encode(array_values($students));
             box-shadow: 0 0 0 3px rgba(204, 0, 0, 0.1);
         }
 
-        /* --- BUTTONS --- */
+     
         .btn { 
             padding: 10px 20px; border: none; border-radius: 50px; 
             cursor: pointer; font-size: 0.9em; font-weight: 600; 
@@ -630,7 +630,7 @@ $students_json = json_encode(array_values($students));
         
         .btn-picker { background-color: var(--primary); color: white; margin-right: 10px; border-radius: 8px; }
         
-        /* --- FILTERS --- */
+       
         .filter-control { 
             background: #fff; padding: 20px; border-radius: 12px; 
             box-shadow: var(--shadow-subtle); margin-bottom: 25px; 
@@ -640,7 +640,7 @@ $students_json = json_encode(array_values($students));
         .filter-group { display: flex; align-items: center; gap: 10px; flex-grow: 1; }
         .search-group { display: flex; gap: 10px; }
 
-        /* --- PICKER --- */
+   
         #randomizer-control { 
             background: #fff; border: 2px dashed var(--primary); 
             padding: 30px; border-radius: 12px; text-align: center; 
@@ -659,7 +659,7 @@ $students_json = json_encode(array_values($students));
             box-shadow: 0 4px 10px rgba(204,0,0,0.2); cursor: pointer;
         }
 
-        /* --- MODALS --- */
+
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
         .modal-content { background-color: #fff; padding: 40px; border-radius: 15px; width: 90%; max-width: 500px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.2); border-top: 5px solid var(--primary); }
         .modal-content h2, .modal-content h3 { margin-top: 0; color: var(--text-main); text-align: center; margin-bottom: 20px; }
@@ -667,7 +667,7 @@ $students_json = json_encode(array_values($students));
         .modal-footer { margin-top: 25px; text-align: center; display: flex; gap: 10px; justify-content: center; }
         .modal-submit-button { width: 100%; }
 
-        /* --- MANAGE CARDS --- */
+      
         .manage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
         .manage-card { 
             background: #fff; border-radius: 12px; padding: 30px; 
@@ -683,19 +683,19 @@ $students_json = json_encode(array_values($students));
         .btn-card-delete { background: #fff0f0; color: var(--primary); }
         .btn-card-delete:hover { background: #ffe0e0; }
 
-        /* --- REPORTS --- */
+      
         .report-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .report-summary-box { background: #fff; padding: 20px; border-radius: 10px; box-shadow: var(--shadow-subtle); border-left: 4px solid var(--primary); }
         .report-summary-box h4 { margin: 0 0 5px 0; font-size: 0.9em; color: var(--text-muted); text-transform: uppercase; }
         .report-summary-box p { font-size: 1.8em; font-weight: 700; color: var(--primary); margin: 0; }
-        .report-header { display: none; } /* Hidden on screen, visible on print */
+        .report-header { display: none; } 
 
-        /* --- MESSAGES --- */
+      
         .error-message { background: #fff5f5; color: var(--primary); padding: 15px; border-radius: 8px; border: 1px solid #ffcccc; margin-bottom: 20px; text-align: center; }
         .success-message { background: #e8f5e9; color: #2e7d32; padding: 15px; border-radius: 8px; border: 1px solid #c8e6c9; margin-bottom: 20px; text-align: center; }
         .no-records { text-align: center; padding: 40px; background: #fff; border-radius: 12px; color: var(--text-muted); border: 1px dashed #ccc; margin-top: 20px; }
 
-        /* --- RESPONSIVE --- */
+    
         @media (max-width: 992px) {
             body { flex-direction: column; }
             .sidebar { width: 100%; height: auto; position: static; flex-direction: row; border-right: none; border-bottom: 1px solid rgba(0,0,0,0.1); }
@@ -717,7 +717,7 @@ $students_json = json_encode(array_values($students));
 
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* --- PRINT STYLES --- */
+     
         @media print {
             .sidebar, .top-navbar, .filter-control, #picker-toggle-button, .modal, .form-container, .btn, .logout-btn, .action-cell, .action-header, #report-selector-forms, #printReportButton { display: none !important; }
             body { background: #fff; color: #000; display: block; }
@@ -743,16 +743,16 @@ $students_json = json_encode(array_values($students));
             .card-grid, .chart-grid { display: none; } /* Hide dashboard widgets on print */
         }
 
-        /* --- SCROLLBAR REMOVAL --- */
-        /* Hide scrollbar for Chrome, Safari and Opera */
+        
+        
         ::-webkit-scrollbar {
             display: none;
         }
 
-        /* Hide scrollbar for IE, Edge and Firefox */
+       
         html, body, .sidebar-nav {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+            -ms-overflow-style: none;  
+            scrollbar-width: none; 
         }
     </style>
 </head>
@@ -1350,19 +1350,19 @@ $students_json = json_encode(array_values($students));
     <div id="deleteSubjectModal" class="modal"><div class="modal-content"><span class="modal-close-button">&times;</span><h3>Delete Subject</h3><p>Delete <strong id="deleteSubjectName"></strong>?</p><form action="" method="post"><input type="hidden" name="form_action" value="confirm_delete_subject"><input type="hidden" name="subject_code_to_delete_confirmed" id="subject_code_to_delete_confirmed"><div class="modal-footer"><button type="submit" class="btn btn-card-delete" style="background:#cc0000; color:white;">Delete</button><button type="button" class="btn btn-cancel" id="cancelDeleteSubjectButton">Cancel</button></div></form></div></div>
 
     <script>
-        // Data & Variables
+        
         const allStudents = JSON.parse('<?= $students_json ?>');
         const maxScore = <?= $maxScore ?>;
         const maxRecitations = <?= $totalPossibleRecitations ?? 10 ?>;
         
-        // Element References
+       
         const resultDisplay = document.getElementById('result-display');
         const scoreModal = document.getElementById('scoreModal');
         const randomizerControl = document.getElementById('randomizer-control');
         const pickerToggleButton = document.getElementById('picker-toggle-button');
         const closeButton = scoreModal ? scoreModal.querySelector('.close-button') : null;
 
-        // --- Logic: Student Picker ---
+        
         function togglePicker() {
             if (!randomizerControl) return;
             const isHidden = randomizerControl.style.display === 'none' || randomizerControl.style.display === '';
@@ -1378,7 +1378,7 @@ $students_json = json_encode(array_values($students));
             }
         }
 
-        // --- Logic: Modal Openers ---
+        
         function getStudentFullName(student) {
             let fullName = student.firstname + ' ';
             if (student.middlename) { fullName += student.middlename.charAt(0) + '. '; }
@@ -1406,7 +1406,7 @@ $students_json = json_encode(array_values($students));
             }
         }
 
-        // --- Logic: Picker Buttons ---
+        
         const pickerButtons = document.querySelectorAll('.btn-picker');
         if (pickerButtons) {
             pickerButtons.forEach(button => {
@@ -1466,7 +1466,7 @@ $students_json = json_encode(array_values($students));
             }, 500);
         }
 
-        // --- Logic: Search Inputs ---
+       
         const setupSearch = (inputId, datalistId, hiddenId) => {
             const input = document.getElementById(inputId);
             const hidden = document.getElementById(hiddenId);
@@ -1486,7 +1486,7 @@ $students_json = json_encode(array_values($students));
         setupSearch('studentSearchInput', 'studentDatalist', 'studentIdToEnroll');
         setupSearch('studentReportSearch', 'studentReportDatalist', 'report_student_id_input');
         
-        // --- Setup for the Delete Student Search ---
+       
         const deleteSearchInput = document.getElementById('studentSearchDelete');
         const deleteHiddenInput = document.getElementById('studentIdToDelete');
         const deleteDatalist = document.getElementById('studentDeleteList');
@@ -1497,7 +1497,7 @@ $students_json = json_encode(array_values($students));
                 for (let option of deleteDatalist.options) {
                     if (option.value === this.value) {
                         deleteHiddenInput.value = option.dataset.value;
-                        // Also store name for modal display later
+                        
                         deleteHiddenInput.dataset.studentName = option.dataset.name;
                         break;
                     }
@@ -1505,9 +1505,9 @@ $students_json = json_encode(array_values($students));
             });
         }
 
-        // --- Logic: Delete/Withdraw Modals ---
         
-        // Specific logic for Delete Student Modal to handle Reason transfer
+        
+        
         const initiateDeleteButton = document.getElementById('initiateDeleteButton');
         const deleteConfirmModal = document.getElementById('deleteConfirmModal');
         
@@ -1522,10 +1522,10 @@ $students_json = json_encode(array_values($students));
                     return;
                 }
                 
-                // Populate Modal Data
+               
                 document.getElementById('deleteStudentName').textContent = studentName;
                 document.getElementById('studentIdToDeleteConfirmed').value = studentId;
-                document.getElementById('deletion_reason_confirmed').value = reason; // Copy reason to hidden input in modal
+                document.getElementById('deletion_reason_confirmed').value = reason; 
                 
                 deleteConfirmModal.style.display = 'flex';
             });
@@ -1552,12 +1552,12 @@ $students_json = json_encode(array_values($students));
             }
         };
 
-        // Note: Removed the standard setupModal for delete_student because we implemented custom logic above for the search bar + reason.
+       
         setupModal('initiateDeleteClassButton', 'deleteClassModal', 'classIdToDelete', 'deleteClassName', 'class_id_to_delete_confirmed', 'deleteClassConfirmForm', 'cancelDeleteClassButton');
         setupModal('initiateDeleteCourseButton', 'deleteCourseModal', 'courseIdToDelete', 'deleteCourseName', 'course_id_to_delete_confirmed', 'deleteCourseConfirmForm', 'cancelDeleteCourseButton');
         setupModal('initiateDeleteSubjectButton', 'deleteSubjectModal', 'subjectCodeToDelete', 'deleteSubjectName', 'subject_code_to_delete_confirmed', 'deleteSubjectConfirmForm', 'cancelDeleteSubjectButton');
 
-        // Special case for Withdraw (button inside table)
+      
         document.querySelectorAll('.btn-withdraw').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.getElementById('withdrawStudentName').textContent = this.dataset.studentname;
@@ -1571,12 +1571,12 @@ $students_json = json_encode(array_values($students));
             document.getElementById('cancelWithdrawButton').addEventListener('click', () => document.getElementById('withdrawModal').style.display = 'none');
         }
 
-        // Global Modal Close (Click Outside or X)
+      
         window.onclick = function(event) { if (event.target.classList.contains('modal')) event.target.style.display = "none"; }
         document.querySelectorAll('.close-button, .modal-close-button').forEach(btn => btn.onclick = function() { this.closest('.modal').style.display = 'none'; });
         if(pickerToggleButton) pickerToggleButton.addEventListener('click', togglePicker);
 
-        // --- Charts ---
+    
         if (document.getElementById('engagementChart')) {
             new Chart(document.getElementById('engagementChart'), {
                 type: 'doughnut',

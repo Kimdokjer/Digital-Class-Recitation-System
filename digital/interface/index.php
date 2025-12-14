@@ -1,14 +1,14 @@
 <?php
 session_start();
 
-// Check if the user is already logged in
+
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
-    // Redirect based on role, matching the logic in your login.php
+   
     if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
         header("Location: dashboard.php");
         exit;
     } else {
-        // Default to student dashboard for students
+      
         header("Location: student_dashboard.php");
         exit;
     }
@@ -22,30 +22,30 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     <title>System Welcome Page</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* --- CSS Variables: RED & WHITE THEME --- */
+       
         :root {
-            /* Main Crimson/Red Accent */
+       
             --primary-accent: #cc0000; 
-            /* Darker Red for hover states */
+        
             --primary-accent-hover: #990000;
             
-            /* Neutral Dark Overlay (Black tint) to make text readable */
+ 
             --dark-overlay: rgba(0, 0, 0, 0.7);
             
-            /* Text Colors */
+
             --text-light: #ffffff;
             --text-creamy: #f4f4f4;
             
             --font-main: 'Montserrat', sans-serif;
         }
 
-        /* --- Base Reset --- */
+   
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { height: 100%; font-family: var(--font-main); }
 
-        /* --- Hero Section Styling --- */
+     
         .hero-section {
-            /* Points to the 'images' folder */
+         
             background-image: url('../images/landingbg.jpg'); 
             
             background-size: cover;
@@ -64,7 +64,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         .hero-overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            /* Gradient from dark red tint to black for better contrast */
+          
             background: linear-gradient(to bottom, rgba(50, 0, 0, 0.4), var(--dark-overlay));
             z-index: 1;
         }
@@ -76,7 +76,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
             animation: fadeUp 1.2s ease-out;
         }
 
-        /* --- Typography --- */
+      
         .hero-title {
             color: var(--text-light);
             font-size: 3.5rem;
@@ -98,7 +98,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 
         .highlight { color: var(--primary-accent); text-shadow: 0px 0px 10px rgba(0,0,0,0.8); }
 
-        /* --- Buttons --- */
+       
         .cta-container { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
 
         .btn {
@@ -114,7 +114,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
             cursor: pointer;
         }
 
-        /* Red Button */
+  
         .btn-primary {
             background-color: var(--primary-accent);
             color: var(--text-light);
@@ -126,7 +126,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
             box-shadow: 0 6px 20px rgba(204, 0, 0, 0.6);
         }
 
-        /* White Outline Button */
+   
         .btn-secondary {
             background-color: transparent;
             color: var(--text-light);
@@ -134,11 +134,11 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         }
         .btn-secondary:hover {
             background-color: var(--text-light);
-            color: #cc0000; /* Text turns red on white background */
+            color: #cc0000; 
             transform: translateY(-3px);
         }
 
-        /* --- Navbar & Logo --- */
+    
         .navbar {
             position: absolute;
             top: 0; left: 0; width: 100%;

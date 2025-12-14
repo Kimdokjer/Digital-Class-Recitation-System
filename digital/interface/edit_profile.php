@@ -2,7 +2,7 @@
 session_start();
 require_once "../classes/studentmanager.php";
 
-// 1. Auth Check
+
 if (!isset($_SESSION['loggedin']) || $_SESSION['user_role'] !== 'student') {
     header("Location: login.php");
     exit;
@@ -12,49 +12,49 @@ $manager = new studentmanager();
 $studentId = $_SESSION['student_id'];
 $studentData = $manager->fetchStudent($studentId);
 
-// State
+
 $successMsg = "";
 $errorMsg = "";
 $showVerifyModal = false;
 
-// --- HANDLE POST REQUESTS ---
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    // A. Verify and Save Sensitive Changes
+ 
     if (isset($_POST['action']) && $_POST['action'] === 'verify_change') {
         $code = trim($_POST['verify_code']);
         
         $result = $manager->verifyChangeCode($studentId, $code);
         if ($result === true) {
-            // Apply Pending Changes
+
             $pending = $_SESSION['pending_profile_update'] ?? [];
             $newEmail = $pending['email'] ?? null;
             $newPass = $pending['password'] ?? null;
 
             if ($manager->updateStudentCredentials($studentId, $newEmail, $newPass)) {
                 $successMsg = "Security credentials updated successfully.";
-                // Clear pending session
+        
                 unset($_SESSION['pending_profile_update']);
-                // Refresh data
+   
                 $studentData = $manager->fetchStudent($studentId);
             } else {
                 $errorMsg = "Failed to update credentials in database.";
             }
         } else {
-            $errorMsg = $result; // Invalid code msg
-            $showVerifyModal = true; // Show modal again
+            $errorMsg = $result; 
+            $showVerifyModal = true; 
         }
     }
-    // B. Initiate Update (Basic + Check Sensitive)
+   
     elseif (isset($_POST['action']) && $_POST['action'] === 'update_profile') {
         
-        // 1. Basic Info Update
+ 
         $lname = trim($_POST['lastName']);
         $fname = trim($_POST['firstName']);
         $mname = trim($_POST['middleName']);
         $nname = trim($_POST['nickname']);
         
-        // Gender Logic: If 'Other' is selected, use the text input
+       
         $genderSelection = $_POST['gender'];
         $gender = $genderSelection;
         if ($genderSelection === 'Other' && !empty($_POST['genderOther'])) {
@@ -63,12 +63,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if ($manager->updateStudentBasicInfo($studentId, $lname, $fname, $mname, $nname, $gender)) {
             $successMsg = "Profile updated successfully.";
-            $studentData = $manager->fetchStudent($studentId); // Refresh
+            $studentData = $manager->fetchStudent($studentId); 
         } else {
             $errorMsg = "Failed to update profile information.";
         }
 
-        // 2. Sensitive Info Check
+      
         $newEmail = trim($_POST['email']);
         $newPass = $_POST['password'];
         $confirmPass = $_POST['confirmPassword'];
@@ -77,17 +77,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $hasPassChange = !empty($newPass);
 
         if ($hasEmailChange || $hasPassChange) {
-            // Validation
+           
             if ($hasPassChange && $newPass !== $confirmPass) {
                 $errorMsg = "New passwords do not match. Security changes cancelled.";
             } else {
-                // Store pending changes
+              
                 $_SESSION['pending_profile_update'] = [
                     'email' => $hasEmailChange ? $newEmail : null,
                     'password' => $hasPassChange ? $newPass : null
                 ];
 
-                // Send Verification to CURRENT Email
+                
                 if ($manager->sendVerificationEmail($studentId, $studentData['email'], $studentData['firstname'])) {
                     $showVerifyModal = true;
                 } else {
@@ -98,7 +98,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-// Logic to determine initial gender state for the UI
+
 $currentGender = $studentData['gender'];
 $isStandardGender = ($currentGender === 'Man' || $currentGender === 'Woman');
 $selectValue = $isStandardGender ? $currentGender : 'Other';
@@ -143,7 +143,7 @@ $otherInputValue = $isStandardGender ? '' : $currentGender;
         .btn-back:hover { color: #cc0000; }
         .btn-back .material-icons { font-size: 18px; margin-right: 5px; }
 
-        /* Modal */
+    
         .modal { display: <?= $showVerifyModal ? 'flex' : 'none' ?>; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .modal-content h3 { color: #cc0000; margin-top: 0; }
@@ -267,7 +267,7 @@ $otherInputValue = $isStandardGender ? '' : $currentGender;
             }
         }
 
-        // Run on load to handle pre-filled values
+       
         window.onload = function() {
             toggleGender();
         };

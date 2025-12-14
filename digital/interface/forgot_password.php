@@ -2,36 +2,36 @@
 session_start();
 require_once "../classes/studentmanager.php";
 
-$step = 1; // Default step
+$step = 1; 
 $error = "";
 $success = "";
-$email = $_SESSION['reset_email'] ?? ""; // Persist email across steps
+$email = $_SESSION['reset_email'] ?? ""; 
 
 $manager = new studentmanager();
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
-    // --- STEP 1: SEND CODE ---
+    
     if (isset($_POST['action']) && $_POST['action'] === 'send_code') {
         $email = trim($_POST['email']);
         $result = $manager->sendPasswordResetEmail($email);
         
         if ($result === true) {
-            $_SESSION['reset_email'] = $email; // Save for next steps
-            $step = 2; // Move to Code verification
+            $_SESSION['reset_email'] = $email; 
+            $step = 2; 
         } else {
             $error = $result;
         }
     }
     
-    // --- STEP 2: VERIFY CODE ---
+    
     elseif (isset($_POST['action']) && $_POST['action'] === 'verify_code') {
         $code = trim($_POST['code']);
         $_SESSION['reset_code'] = $code;
         $step = 3; 
     }
 
-    // --- STEP 3: RESET PASSWORD ---
+   
     elseif (isset($_POST['action']) && $_POST['action'] === 'reset_password') {
         $pass = $_POST['password'];
         $confirm = $_POST['confirm_password'];
@@ -47,12 +47,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
             $result = $manager->resetStudentPassword($email, $code, $pass);
             if ($result === true) {
-                $step = 4; // Success Screen
+                $step = 4; 
                 unset($_SESSION['reset_email']);
                 unset($_SESSION['reset_code']);
             } else {
                 $error = $result;
-                $step = 2; // Go back to code entry if code was wrong
+                $step = 2; 
             }
         }
     }
@@ -69,16 +69,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <style>
-        /* --- THEME VARIABLES --- */
+        
         :root {
-            --primary-accent: #cc0000;       /* Crimson Red */
-            --primary-accent-hover: #990000; /* Darker Red */
+            --primary-accent: #cc0000;       
+            --primary-accent-hover: #990000; 
             --text-dark: #333333;
             --text-muted: #666666;
             --bg-overlay: rgba(0, 0, 0, 0.65);
         }
 
-        /* --- BASE STYLES --- */
+       
         * { box-sizing: border-box; }
 
         body {
@@ -96,7 +96,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             position: relative;
         }
 
-        /* Dark Overlay */
+       
         body::before {
             content: "";
             position: absolute;
@@ -105,7 +105,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             z-index: 0;
         }
 
-        /* --- CONTAINER --- */
+       
         .container {
             background-color: #ffffff;
             padding: 40px;
@@ -120,7 +120,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             animation: fadeUp 0.6s ease-out;
         }
 
-        /* --- IMAGES & TYPOGRAPHY --- */
+       
         .logo {
             width: 100px;
             height: 100px;
@@ -143,7 +143,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             font-size: 0.95rem;
         }
 
-        /* --- FORM ELEMENTS --- */
+      
         .form-group {
             text-align: left;
             margin-bottom: 20px;
@@ -158,7 +158,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             width: 100%;
             padding: 14px 20px;
             border: 2px solid #f0f0f0;
-            border-radius: 50px; /* Pill shape */
+            border-radius: 50px; 
             background-color: #f9f9f9;
             font-size: 1rem;
             font-family: 'Montserrat', sans-serif;
@@ -173,7 +173,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             box-shadow: 0 4px 15px rgba(204, 0, 0, 0.1);
         }
 
-        /* Specific style for Code Input */
+      
         .code-input {
             letter-spacing: 10px;
             font-size: 1.5rem !important;
@@ -182,7 +182,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             color: var(--primary-accent) !important;
         }
 
-        /* --- BUTTONS --- */
+       
         button {
             width: 100%;
             padding: 15px;
@@ -205,7 +205,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             box-shadow: 0 6px 20px rgba(204, 0, 0, 0.4);
         }
 
-        /* --- LINKS & ALERTS --- */
+      
         .back-link {
             display: inline-block;
             margin-top: 25px;
@@ -235,7 +235,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             gap: 8px;
         }
 
-        /* Password Toggle Eye */
+      
         .toggle-pw {
             position: absolute;
             right: 15px;

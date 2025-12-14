@@ -70,17 +70,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
 <style>
-    /* --- THEME VARIABLES --- */
+    
     :root {
-        --primary-accent: #cc0000;       /* Crimson Red */
-        --primary-accent-hover: #990000; /* Darker Red */
+        --primary-accent: #cc0000;       
+        --primary-accent-hover: #990000; 
         --text-dark: #333333;
         --text-muted: #666666;
         --border-color: #dddddd;
         --bg-overlay: rgba(0, 0, 0, 0.65);
     }
 
-    /* --- BASE RESET --- */
+    
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
@@ -96,7 +96,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         position: relative;
     }
 
-    /* Dark Overlay for readability */
+    
     body::before {
         content: "";
         position: absolute;
@@ -105,12 +105,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         z-index: 0;
     }
 
-    /* --- HOME BUTTON STYLING --- */
+   
     .home-btn {
         position: absolute;
         top: 30px;
         left: 40px;
-        z-index: 10; /* Ensures it sits above the overlay */
+        z-index: 10; 
         color: #ffffff;
         text-decoration: none;
         display: flex;
@@ -119,18 +119,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         font-weight: 600;
         font-size: 1rem;
         transition: all 0.3s ease;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Improves readability on bg image */
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5); 
     }
 
     .home-btn:hover {
-        color: var(--primary-accent); /* Turns red on hover */
-        transform: translateX(-5px); /* Slight movement effect */
+        color: var(--primary-accent); 
+        transform: translateX(-5px); 
     }
 
-    /* --- LOGIN CARD CONTAINER --- */
+  
     .login-wrapper {
         position: relative;
-        z-index: 1; /* Above overlay */
+        z-index: 1; 
         width: 100%;
         max-width: 420px;
         padding: 20px;
@@ -146,7 +146,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         border-top: 6px solid var(--primary-accent);
     }
 
-    /* --- LOGO & HEADER --- */
+   
     .logo-img {
         width: 100px;
         height: 100px;
@@ -171,7 +171,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         font-weight: 500;
     }
 
-    /* --- FORM ELEMENTS --- */
+   
     .form-group {
         margin-bottom: 20px;
         text-align: left;
@@ -200,13 +200,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         font-size: 20px;
     }
 
-    /* Modern Input Styling */
+   
     input[type="text"], input[type="password"] {
         width: 100%;
-        padding: 14px 14px 14px 45px; /* Left padding space for icon */
+        padding: 14px 14px 14px 45px; 
         border: 2px solid #f0f0f0;
         background-color: #f9f9f9;
-        border-radius: 50px; /* Pill shape inputs */
+        border-radius: 50px; 
         font-size: 0.95rem;
         color: #333;
         font-family: 'Montserrat', sans-serif;
@@ -220,7 +220,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         box-shadow: 0 4px 15px rgba(204, 0, 0, 0.1);
     }
 
-    /* Toggle Password Eye */
+    
     .toggle-password {
         position: absolute;
         right: 15px;
@@ -236,7 +236,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         color: var(--primary-accent);
     }
 
-    /* --- BUTTONS --- */
+   
     button {
         background-color: var(--primary-accent);
         color: white;
@@ -260,7 +260,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         box-shadow: 0 6px 20px rgba(204, 0, 0, 0.5);
     }
 
-    /* --- LINKS & FOOTER --- */
+    
     .forgot-wrapper {
         text-align: right;
         margin-top: 5px;
@@ -299,7 +299,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         color: var(--primary-accent-hover);
     }
 
-    /* --- ALERTS --- */
+    
     .error-message {
         background-color: #fff2f2;
         color: var(--primary-accent);
@@ -314,13 +314,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         gap: 8px;
     }
 
-    /* Animation */
+   
     @keyframes fadeUp {
         from { opacity: 0; transform: translateY(30px); }
         to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Responsive adjustments */
+   
     @media (max-width: 480px) {
         .login-container { padding: 30px 20px; }
         h2 { font-size: 1.5rem; }

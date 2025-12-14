@@ -2,9 +2,9 @@
 require_once "../classes/studentmanager.php";
 
 $message = "";
-$messageType = ""; // 'success' or 'error'
+$messageType = ""; 
 
-// Handle Form Submission
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = trim($_POST['email']);
     $code = trim($_POST['code']);
@@ -14,8 +14,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $db = new Database();
             $conn = $db->connect();
 
-            // 1. Verify Code matches the Student via Email
-            // We join user_verification with students table to match the email address
+            
+            
             $sql = "SELECT v.* FROM user_verification v
                     JOIN students s ON v.student_id = s.student_id
                     WHERE s.email = :email 
@@ -28,12 +28,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $verification = $stmt->fetch();
 
             if ($verification) {
-                // 2. Code is valid. Verify the user.
+               
                 $sql_update = "UPDATE users SET is_verified = 1 WHERE student_id = :studentId";
                 $stmt_update = $conn->prepare($sql_update);
                 $stmt_update->execute([':studentId' => $verification['student_id']]);
 
-                // 3. Delete used code
+              
                 $sql_delete = "DELETE FROM user_verification WHERE token = :code";
                 $conn->prepare($sql_delete)->execute([':code' => $code]);
 

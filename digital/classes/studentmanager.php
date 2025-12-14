@@ -160,7 +160,7 @@ class studentmanager extends Database {
         }
     }
 
-    // --- FEATURE: UPDATE STUDENT BASIC INFO ---
+  
     public function updateStudentBasicInfo($studentId, $lastName, $firstName, $middleName, $nickname, $gender) {
         $sql = "UPDATE students SET lastname = :lname, firstname = :fname, middlename = :mname, nickname = :nname, gender = :gender WHERE student_id = :sid";
         try {
@@ -180,7 +180,7 @@ class studentmanager extends Database {
         }
     }
 
-    // --- FEATURE: UPDATE CREDENTIALS (SENSITIVE) ---
+
     public function updateStudentCredentials($studentId, $newEmail = null, $newPassword = null) {
         try {
             $conn = $this->connect();
@@ -206,11 +206,11 @@ class studentmanager extends Database {
         }
     }
 
-    // --- FEATURE: FORGOT PASSWORD (SEND CODE) ---
+
     public function sendPasswordResetEmail($email) {
         $conn = $this->connect();
         
-        // 1. Check if email exists
+
         $stmt = $conn->prepare("SELECT student_id, firstname FROM students WHERE email = :email LIMIT 1");
         $stmt->execute([':email' => $email]);
         $student = $stmt->fetch();
@@ -219,19 +219,19 @@ class studentmanager extends Database {
             return "Email not found in our records.";
         }
 
-        // 2. Generate Code
+
         $code = random_int(100000, 999999);
         $expires = new DateTime('now', new DateTimeZone('Asia/Manila')); 
         $expires->add(new DateInterval('PT1H')); 
         $expiresStr = $expires->format('Y-m-d H:i:s');
 
-        // 3. Store Code (Delete old codes first)
+
         $conn->prepare("DELETE FROM user_verification WHERE student_id = ?")->execute([$student['student_id']]);
         
         $sql = "INSERT INTO user_verification (token, student_id, expires_at) VALUES (:token, :sid, :exp)";
         $conn->prepare($sql)->execute([':token' => $code, ':sid' => $student['student_id'], ':exp' => $expiresStr]);
 
-        // 4. Send Email
+
         $subject = "Reset Your Password - Recitation System";
         $body = "
             <html><body>
@@ -254,7 +254,7 @@ class studentmanager extends Database {
         return "Failed to send email. Please check your mail server settings.";
     }
 
-    // --- FEATURE: FORGOT PASSWORD (RESET) ---
+
     public function resetStudentPassword($email, $code, $newPassword) {
         $conn = $this->connect();
         $now = new DateTime('now', new DateTimeZone('Asia/Manila'));
@@ -279,7 +279,7 @@ class studentmanager extends Database {
         return true;
     }
 
-    // --- NOTIFICATION: ENROLLMENT ---
+
     public function sendEnrollmentNotification($studentId, $classId) {
         try {
             $conn = $this->connect();
@@ -338,7 +338,7 @@ class studentmanager extends Database {
         }
     }
 
-    // --- NOTIFICATION: WITHDRAWAL ---
+
     public function sendWithdrawalNotification($studentId, $classId, $reason) {
         try {
             $conn = $this->connect();
@@ -395,7 +395,7 @@ class studentmanager extends Database {
         }
     }
 
-    // --- NOTIFICATION: DELETION (New Helper) ---
+
     private function sendDeletionNotification($studentData, $reason) {
         $studentName = htmlspecialchars($studentData['firstname']);
         $reasonText = htmlspecialchars($reason);
@@ -424,7 +424,7 @@ class studentmanager extends Database {
         return $this->sendEmail($studentData['email'], $studentName, $subject, $body);
     }
 
-    // --- RECITATION: ADD GRADE ---
+
     public function addRecitation() {
         $sql = "INSERT INTO recits (student_id, subject_code, date, score, mode) VALUES (:studentId, :subjectCode, :date, :score, :mode)";
         $query = $this->connect()->prepare($sql);
@@ -486,7 +486,7 @@ class studentmanager extends Database {
         return false;
     }
 
-    // --- GETTERS: CLASSES & COURSES ---
+
     public function fetchAllClasses() {
         $sql = "SELECT
                     c.class_id,
@@ -520,7 +520,7 @@ class studentmanager extends Database {
         return [];
     }
 
-    // --- MAIN: ADD STUDENT (WITH NORMALIZATION) ---
+
     public function addStudent() {
         if (empty($this->password)) {
             return false;
@@ -528,7 +528,7 @@ class studentmanager extends Database {
         $conn = $this->connect();
         $conn->beginTransaction();
         try {
-            // 1. Find Course ID based on Name
+
             $sql_course = "SELECT course_id FROM course WHERE course_name = :courseName";
             $query_course = $conn->prepare($sql_course);
             $query_course->bindParam(":courseName", $this->courseName);
@@ -540,7 +540,7 @@ class studentmanager extends Database {
                  error_log("Warning: Course name '{$this->courseName}' not found.");
             }
 
-            // 2. Insert into Students table
+
             $sql_student = "INSERT INTO students(student_id, course_id, email, lastname, firstname, middlename, nickname, gender, birthdate, date_added)
                             VALUES(:studentId, :courseId, :email, :lastName, :firstName, :middleName, :nickname, :gender, :birthDate, NOW())";
             $query_student = $conn->prepare($sql_student);
@@ -556,7 +556,7 @@ class studentmanager extends Database {
                 ":birthDate" => $this->birthDate
             ]);
 
-            // 3. Insert into Users table
+
             $hashed_password = password_hash($this->password, PASSWORD_DEFAULT);
             $role = 'student';
             $sql_users = "INSERT INTO users (username, password_hash, role, student_id, is_verified)
@@ -578,7 +578,7 @@ class studentmanager extends Database {
         }
     }
 
-    // --- MAIN: VIEW STUDENTS (WITH JOIN) ---
+
     public function viewStudents($sortColumn = 'lastname', $sortOrder = 'ASC', $classFilter = 'all', $searchQuery = '') {
         $validSortColumns = [
             'lastName' => 's.lastname',
@@ -603,7 +603,7 @@ class studentmanager extends Database {
             $sql_class_join = "INNER JOIN student_enrollments se ON s.student_id = se.student_id
                                INNER JOIN class_sections c ON se.class_id = c.class_id";
             
-            // *** FIX: Filter by CLASS ID, not NAME ***
+
             $whereConditions[] = "c.class_id = :classFilter";
             $params[':classFilter'] = $classFilter;
             
@@ -649,7 +649,7 @@ class studentmanager extends Database {
         return [];
     }
 
-    // --- HELPER: FETCH SINGLE STUDENT ---
+
     public function fetchStudent($studentId) {
         $sql = "SELECT s.*, c.course_name FROM students s LEFT JOIN course c ON s.course_id = c.course_id WHERE s.student_id = :studentId";
         try {
@@ -683,9 +683,9 @@ class studentmanager extends Database {
         return 0;
     }
 
-    // --- MAIN: DELETE STUDENT (UPDATED) ---
+
     public function deleteStudent($studentId, $reason = "") {
-        // 1. Fetch student info first to get email for notification
+
         $studentData = $this->fetchStudent($studentId);
         
         $conn = $this->connect();
@@ -699,7 +699,7 @@ class studentmanager extends Database {
              if ($query_student->rowCount() > 0) {
                  $conn->commit();
                  
-                 // 2. Send Email Notification if student existed and has email
+
                  if ($studentData && !empty($studentData['email'])) {
                      $this->sendDeletionNotification($studentData, $reason);
                  }
@@ -769,7 +769,7 @@ class studentmanager extends Database {
             $wasSuccessful = $query->rowCount() > 0;
 
             if ($wasSuccessful) {
-                // Send notification
+
                 $this->sendWithdrawalNotification($studentId, $classId, $reason);
             }
             
