@@ -31,7 +31,7 @@ $report_student_subjects = [];
 
 $report_class_id = $_GET['report_class_id'] ?? '';
 $report_student_id = $_GET['report_student_id'] ?? '';
-$report_student_class_id = $_GET['report_student_class_id'] ?? ''; 
+$report_student_class_id = $_GET['report_student_class_id'] ?? '';
 
 
 $dashboard_stats = [];
@@ -106,9 +106,9 @@ if ($current_section === 'reports') {
                 break;
             }
         }
-    } 
+    }
     
-  
+    
     elseif (!empty($report_student_id)) {
         $report_student_details = $manager->fetchStudent($report_student_id);
         
@@ -116,7 +116,7 @@ if ($current_section === 'reports') {
 
             $all_enrolled = $manager->getStudentEnrolledSubjects($report_student_id);
             
-      
+    
             if (!empty($report_student_class_id)) {
                 $report_student_subjects = [];
                 foreach ($all_enrolled as $subj) {
@@ -125,11 +125,11 @@ if ($current_section === 'reports') {
                     }
                 }
             } else {
-               
+                
                 $report_student_subjects = $all_enrolled;
             }
 
-           
+            
             foreach ($report_student_subjects as $key => $subject) {
                 $recits = $manager->getStudentRecitations($report_student_id, $subject['subject_code']);
                 $avg = $manager->getStudentAverageScore($report_student_id, $subject['subject_code']);
@@ -155,7 +155,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
             $stmtCheckStudent->execute([$studentIdToEnroll]);
             
             if ($stmtCheckStudent->rowCount() === 0) {
-                 $enroll_errors["general"] = "Error: Student ID not found in the database.";
+                $enroll_errors["general"] = "Error: Student ID not found in the database.";
             } else {
                 $stmtCheckEnroll = $conn->prepare("SELECT * FROM student_enrollments WHERE student_id = ? AND class_id = ?");
                 $stmtCheckEnroll->execute([$studentIdToEnroll, $classIdToEnroll]);
@@ -181,7 +181,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
                 }
             }
         } catch (PDOException $e) {
-             $enroll_errors["general"] = "Database error during enrollment: " . $e->getMessage();
+            $enroll_errors["general"] = "Database error during enrollment: " . $e->getMessage();
         }
     }
     $add_student_errors = array_merge($add_student_errors, $enroll_errors);
@@ -285,7 +285,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
             header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_classes&msg_type=success&msg=" . urlencode("Class section deleted successfully."));
             exit;
         } else {
-             $add_student_errors['academics_error'] = "Cannot delete Class. There are students enrolled in it, or recitation records exist.";
+            $add_student_errors['academics_error'] = "Cannot delete Class. There are students enrolled in it, or recitation records exist.";
         }
     } else {
         $add_student_errors['academics_error'] = "No class section selected for deletion.";
@@ -318,7 +318,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
             header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_classes&msg_type=success&msg=" . urlencode("Subject deleted successfully."));
             exit;
         } else {
-             $add_student_errors['academics_error'] = "Cannot delete Subject. It is currently linked to active Class Sections or Recitations.";
+            $add_student_errors['academics_error'] = "Cannot delete Subject. It is currently linked to active Class Sections or Recitations.";
         }
     } else {
         $add_student_errors['academics_error'] = "No subject selected for deletion.";
@@ -350,12 +350,69 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_PO
             header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_classes&msg_type=success&msg=" . urlencode("Course deleted successfully."));
             exit;
         } else {
-             $add_student_errors['academics_error'] = "Cannot delete Course. There are students currently enrolled in this course.";
+            $add_student_errors['academics_error'] = "Cannot delete Course. There are students currently enrolled in this course.";
         }
     } else {
         $add_student_errors['academics_error'] = "No course selected for deletion.";
     }
 }
+
+// --- START: ADMIN MANAGEMENT LOGIC ---
+
+// Fetch all admins for the 'manage_admins' section
+if ($current_section === 'manage_admins') {
+    $allAdmins = $manager->fetchAllAdmins();
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_POST['form_action'] === 'add_admin') {
+    $admin_username = trim(htmlspecialchars($_POST['admin_username'] ?? ''));
+    $admin_password = $_POST['admin_password'] ?? '';
+    $admin_password_confirm = $_POST['admin_password_confirm'] ?? '';
+    $admin_errors = [];
+
+    if (empty($admin_username) || empty($admin_password) || empty($admin_password_confirm)) {
+        $admin_errors['admin_error'] = "All fields are required.";
+    } elseif ($admin_password !== $admin_password_confirm) {
+        $admin_errors['admin_error'] = "Passwords do not match.";
+    } elseif (strlen($admin_password) < 6) {
+         $admin_errors['admin_error'] = "Password must be at least 6 characters long.";
+    }
+
+    if (empty($admin_errors)) {
+        $result = $manager->addAdmin($admin_username, $admin_password);
+        
+        if ($result === true) {
+            header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_admins&msg_type=success&msg=" . urlencode("System Admin '$admin_username' added successfully!"));
+            exit;
+        } else {
+            // $result contains the error message if it's not true
+            $admin_errors['admin_error'] = "Failed to add admin: " . $result; 
+        }
+    }
+    if (isset($admin_errors['admin_error'])) {
+        $add_student_errors = array_merge($add_student_errors, $admin_errors);
+    }
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['form_action']) && $_POST['form_action'] === 'confirm_delete_admin') {
+    $username_to_delete = $_POST['username_to_delete_confirmed'] ?? null;
+    
+    // Check for self-deletion prevention
+    if ($username_to_delete && $username_to_delete !== $_SESSION['username']) { 
+        if ($manager->deleteAdmin($username_to_delete)) {
+            header("Location: " . $_SERVER['PHP_SELF'] . "?section=manage_admins&msg_type=success&msg=" . urlencode("Admin '$username_to_delete' deleted successfully."));
+            exit;
+        } else {
+            $add_student_errors['admin_error'] = "Error deleting Admin. Could not find or delete user.";
+        }
+    } elseif ($username_to_delete === $_SESSION['username']) {
+        $add_student_errors['admin_error'] = "You cannot delete your own admin account.";
+    } else {
+        $add_student_errors['admin_error'] = "No admin selected for deletion.";
+    }
+}
+
+// --- END: ADMIN MANAGEMENT LOGIC ---
 
 
 if(isset($_GET['msg_type'])) { 
@@ -380,9 +437,9 @@ $students_json = json_encode(array_values($students));
     <style>
 
         :root {
-            --primary: #cc0000;           
+            --primary: #cc0000;            
             --primary-dark: #8a0000;      
-            --bg-body: #eef2f5;           
+            --bg-body: #eef2f5;            
             --bg-sidebar: #cc0000;        
             --text-sidebar: #ffffff;      
             --text-main: #333333;
@@ -508,10 +565,10 @@ $students_json = json_encode(array_values($students));
             color: white;
         }
 
-       
+        
         .main-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
 
-       
+        
         .top-navbar { 
             background-color: #ffffff; 
             padding: 15px 30px; 
@@ -541,7 +598,7 @@ $students_json = json_encode(array_values($students));
             padding-bottom: 5px; display: inline-block;
         }
 
-       
+        
         .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; margin-bottom: 30px; }
         .card { 
             background-color: #ffffff; 
@@ -557,7 +614,7 @@ $students_json = json_encode(array_values($students));
         .card h3 { margin: 0 0 10px 0; font-size: 0.95em; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
         .card .card-number { font-size: 2.2em; font-weight: 700; color: var(--text-main); margin: 0; }
 
-       
+        
         .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
         .chart-container { background-color: white; padding: 25px; border-radius: 12px; box-shadow: var(--shadow-subtle); border: 1px solid var(--border-color); }
         .chart-container h3 { margin-top: 0; text-align: center; color: var(--text-main); font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; }
@@ -583,7 +640,7 @@ $students_json = json_encode(array_values($students));
         .text-center { text-align: center; }
         .text-right { text-align: right; }
 
-     
+      
         .status-badge { display: inline-block; padding: 5px 12px; font-size: 0.75em; font-weight: 700; border-radius: 50px; text-transform: uppercase; }
         .status-enrolled { background-color: #e8f5e9; color: #2e7d32; }
         .status-not-enrolled { background-color: #fff3e0; color: #e65100; }
@@ -599,7 +656,7 @@ $students_json = json_encode(array_values($students));
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-main); font-size: 0.9em; }
         
-        input[type="text"], input[type="search"], input[type="number"], input[type="date"], select, textarea { 
+        input[type="text"], input[type="search"], input[type="number"], input[type="date"], input[type="password"], select, textarea { 
             width: 100%; padding: 12px 15px; 
             border: 1px solid #ddd; border-radius: 8px; 
             font-size: 0.95em; color: var(--text-main);
@@ -612,7 +669,7 @@ $students_json = json_encode(array_values($students));
             box-shadow: 0 0 0 3px rgba(204, 0, 0, 0.1);
         }
 
-     
+      
         .btn { 
             padding: 10px 20px; border: none; border-radius: 50px; 
             cursor: pointer; font-size: 0.9em; font-weight: 600; 
@@ -630,7 +687,7 @@ $students_json = json_encode(array_values($students));
         
         .btn-picker { background-color: var(--primary); color: white; margin-right: 10px; border-radius: 8px; }
         
-       
+        
         .filter-control { 
             background: #fff; padding: 20px; border-radius: 12px; 
             box-shadow: var(--shadow-subtle); margin-bottom: 25px; 
@@ -640,7 +697,7 @@ $students_json = json_encode(array_values($students));
         .filter-group { display: flex; align-items: center; gap: 10px; flex-grow: 1; }
         .search-group { display: flex; gap: 10px; }
 
-   
+    
         #randomizer-control { 
             background: #fff; border: 2px dashed var(--primary); 
             padding: 30px; border-radius: 12px; text-align: center; 
@@ -717,7 +774,7 @@ $students_json = json_encode(array_values($students));
 
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-     
+    
         @media print {
             .sidebar, .top-navbar, .filter-control, #picker-toggle-button, .modal, .form-container, .btn, .logout-btn, .action-cell, .action-header, #report-selector-forms, #printReportButton { display: none !important; }
             body { background: #fff; color: #000; display: block; }
@@ -749,18 +806,18 @@ $students_json = json_encode(array_values($students));
             display: none;
         }
 
-       
+        
         html, body, .sidebar-nav {
             -ms-overflow-style: none;  
-            scrollbar-width: none; 
+            scrollbar-width: none;  
         }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <div class="sidebar-header">
-             <img src="../images/logowmsu.jpg" alt="Logo">
-             <h2>Digital Class Recitation</h2>
+            <img src="../images/logowmsu.jpg" alt="Logo">
+            <h2>Digital Class Recitation</h2>
         </div>
         <nav class="sidebar-nav">
             <ul>
@@ -768,6 +825,7 @@ $students_json = json_encode(array_values($students));
                 <li><a href="?section=view_students" class="<?= ($current_section == 'view_students' ? 'active' : '') ?>"><span class="material-icons">people</span>Students</a></li>
                 <li><a href="?section=add_student" class="<?= ($current_section == 'add_student' ? 'active' : '') ?>"><span class="material-icons">person_add</span>Enroll</a></li>
                 <li><a href="?section=manage_classes" class="<?= ($current_section == 'manage_classes' ? 'active' : '') ?>"><span class="material-icons">class</span>Academics</a></li>
+                <li><a href="?section=manage_admins" class="<?= ($current_section == 'manage_admins' ? 'active' : '') ?>"><span class="material-icons">security</span>System Admin</a></li>
                 <li><a href="?section=recitation_records" class="<?= ($current_section == 'recitation_records' ? 'active' : '') ?>"><span class="material-icons">assignment</span>Recitations</a></li>
                 <li><a href="?section=reports" class="<?= ($current_section == 'reports' ? 'active' : '') ?>"><span class="material-icons">print</span>Reports</a></li>
                 <li><a href="?section=delete_student" class="delete-link <?= ($current_section == 'delete_student' ? 'active' : '') ?>"><span class="material-icons">person_remove</span>Remove</a></li>
@@ -781,7 +839,7 @@ $students_json = json_encode(array_values($students));
     </div>
 
     <div class="main-wrapper">
-         <nav class="top-navbar">
+        <nav class="top-navbar">
             <h1><?= ucfirst(str_replace('_', ' ', $current_section)) ?></h1>
             <div class="user-menu">
                 <span style="font-size: 30px;" class="material-icons">account_circle</span>
@@ -790,7 +848,7 @@ $students_json = json_encode(array_values($students));
         </nav>
 
         <main class="main-content">
-             <?php if ($current_section === 'dashboard'): ?>
+            <?php if ($current_section === 'dashboard'): ?>
                 <div class="container">
                     <?php if (isset($dashboard_stats['error'])): ?><p class="error-message"><?= $dashboard_stats['error'] ?></p><?php endif; ?>
                     
@@ -1167,6 +1225,64 @@ $students_json = json_encode(array_values($students));
                     </div>
                 </div>
             
+            <?php elseif ($current_section === 'manage_admins'): ?>
+                <div class="container">
+                    
+                    <?php if (isset($_GET['msg_type']) && $_GET['msg_type'] == 'success'): ?>
+                        <div class="success-message" style="margin-bottom: 20px;">
+                            <span class="material-icons" style="vertical-align: bottom;">check_circle</span> 
+                            <?= htmlspecialchars($_GET['msg']) ?>
+                        </div>
+                    <?php endif; ?>
+                    <?php if (isset($add_student_errors['admin_error'])): ?>
+                        <div class="error-message" style="margin-bottom: 20px;">
+                            <span class="material-icons" style="vertical-align: bottom;">error</span> 
+                            <?= htmlspecialchars($add_student_errors['admin_error']) ?>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <div class="manage-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div class="manage-card">
+                            <h3>Add New System Admin</h3>
+                            
+                            <form action="" method="post">
+                                <input type="hidden" name="form_action" value="add_admin">
+                                <div class="form-group"><label for="admin_username">Username</label><input type="text" id="admin_username" name="admin_username" placeholder="Enter username" required></div>
+                                <div class="form-group"><label for="admin_password">Password</label><input type="password" id="admin_password" name="admin_password" placeholder="Password (min 6 chars)" required></div>
+                                <div class="form-group"><label for="admin_password_confirm">Confirm Password</label><input type="password" id="admin_password_confirm" name="admin_password_confirm" placeholder="Confirm password" required></div>
+                                <button type="submit" class="btn-card-add" style="width: 100%;">Create Admin</button>
+                            </form>
+                        </div>
+                        
+                        <div class="manage-card">
+                            <h3>Existing Admins</h3>
+                            <?php if (!empty($allAdmins)): ?>
+                                <table style="margin-top: 0; box-shadow: none;">
+                                    <thead><tr><th>Username</th><th>Action</th></tr></thead>
+                                    <tbody>
+                                        <?php foreach ($allAdmins as $admin): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($admin['username']) ?> <?= ($admin['username'] == $_SESSION['username']) ? ' (You)' : '' ?></td>
+                                            <td>
+                                                <button type="button" 
+                                                    class="btn btn-card-delete delete-admin-btn" 
+                                                    data-username="<?= htmlspecialchars($admin['username']) ?>"
+                                                    style="padding: 5px 10px; font-size: 0.8em;"
+                                                    <?= ($admin['username'] == $_SESSION['username']) ? 'disabled title="Cannot delete your own account"' : '' ?>>
+                                                    Delete
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            <?php else: ?>
+                                <p class="no-records" style="padding: 10px;">No other admin accounts found.</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            
             <?php elseif ($current_section === 'reports'): ?>
                 <div class="container">
                     <div id="report-selector-forms">
@@ -1287,7 +1403,7 @@ $students_json = json_encode(array_values($students));
                         
                         <?php if ((!empty($report_class_id) && $report_class_details) || (!empty($report_student_id) && $report_student_details)): ?>
                         <div style="text-align: center; margin-top: 30px;" id="printReportButton">
-                             <button type="button" class="btn btn-print" onclick="window.print()"><span class="material-icons">print</span> Print</button>
+                            <button type="button" class="btn btn-print" onclick="window.print()"><span class="material-icons">print</span> Print</button>
                         </div>
                         <?php endif; ?>
                     </div>
@@ -1349,13 +1465,30 @@ $students_json = json_encode(array_values($students));
     
     <div id="deleteSubjectModal" class="modal"><div class="modal-content"><span class="modal-close-button">&times;</span><h3>Delete Subject</h3><p>Delete <strong id="deleteSubjectName"></strong>?</p><form action="" method="post"><input type="hidden" name="form_action" value="confirm_delete_subject"><input type="hidden" name="subject_code_to_delete_confirmed" id="subject_code_to_delete_confirmed"><div class="modal-footer"><button type="submit" class="btn btn-card-delete" style="background:#cc0000; color:white;">Delete</button><button type="button" class="btn btn-cancel" id="cancelDeleteSubjectButton">Cancel</button></div></form></div></div>
 
+    <div id="deleteAdminModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close-button">&times;</span>
+            <h3>Confirm Admin Deletion</h3>
+            <p>Are you sure you want to delete admin <strong id="deleteAdminUsername"></strong>?</p>
+            <p class="error-message" style="background: #fff0f0; margin-top: 10px;">This action cannot be undone and the user will lose system access.</p>
+            
+            <form action="" method="post">
+                <input type="hidden" name="form_action" value="confirm_delete_admin">
+                <input type="hidden" name="username_to_delete_confirmed" id="username_to_delete_confirmed">
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-card-delete" style="background:#cc0000; color:white;">Yes, Delete</button>
+                    <button type="button" class="btn btn-cancel" id="cancelDeleteAdminButton">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <script>
         
         const allStudents = JSON.parse('<?= $students_json ?>');
         const maxScore = <?= $maxScore ?>;
         const maxRecitations = <?= $totalPossibleRecitations ?? 10 ?>;
         
-       
+        
         const resultDisplay = document.getElementById('result-display');
         const scoreModal = document.getElementById('scoreModal');
         const randomizerControl = document.getElementById('randomizer-control');
@@ -1367,11 +1500,11 @@ $students_json = json_encode(array_values($students));
             if (!randomizerControl) return;
             const isHidden = randomizerControl.style.display === 'none' || randomizerControl.style.display === '';
             randomizerControl.style.display = isHidden ? 'block' : 'none';
-             if(pickerToggleButton) {
+            if(pickerToggleButton) {
                 pickerToggleButton.innerHTML = isHidden
                     ? '<span class="material-icons" style="vertical-align: middle; margin-right: 5px;">close</span>Hide Picker'
                     : '<span class="material-icons" style="vertical-align: middle; margin-right: 5px;">touch_app</span>Pick a Student';
-             }
+            }
             if (!isHidden && resultDisplay) {
                 resultDisplay.innerHTML = "Click a button to pick a student.";
                 resultDisplay.style.color = 'inherit';
@@ -1399,7 +1532,7 @@ $students_json = json_encode(array_values($students));
 
         window.handleScoreButtonClick = function(studentId, mode) {
             const student = allStudents.find(s => s.student_id == studentId);
-             if (student && student.subject_code) {
+            if (student && student.subject_code) {
                 openScoreModal(student, mode);
             } else {
                 alert("Error: Student not assigned to a class/subject.");
@@ -1411,7 +1544,7 @@ $students_json = json_encode(array_values($students));
         if (pickerButtons) {
             pickerButtons.forEach(button => {
                 button.addEventListener('click', (event) => {
-                      if(resultDisplay) resultDisplay.innerHTML = '<span class="material-icons" style="font-size: 2em; animation: spin 1s linear infinite;">hourglass_empty</span> Picking...';
+                    if(resultDisplay) resultDisplay.innerHTML = '<span class="material-icons" style="font-size: 2em; animation: spin 1s linear infinite;">hourglass_empty</span> Picking...';
                     const mode = event.target.closest('button').dataset.mode;
                     setTimeout(() => pickStudent(mode), 50);
                 });
@@ -1419,19 +1552,19 @@ $students_json = json_encode(array_values($students));
         }
 
         function pickStudent(mode) {
-             if (!resultDisplay) return;
-             const enrolledStudents = allStudents.filter(s => s.class_name && s.class_name.trim() !== '' && s.class_name.trim() !== '(Multiple)');
+            if (!resultDisplay) return;
+            const enrolledStudents = allStudents.filter(s => s.class_name && s.class_name.trim() !== '' && s.class_name.trim() !== '(Multiple)');
             if (enrolledStudents.length === 0) {
-                 resultDisplay.textContent = "No enrolled students available in this class filter!";
-                 resultDisplay.style.color = '#D32F2F';
-                 return;
-             }
+                resultDisplay.textContent = "No enrolled students available in this class filter!";
+                resultDisplay.style.color = '#D32F2F';
+                return;
+            }
             let potentialStudents = enrolledStudents.filter(s => parseInt(s.totalRecitations) < maxRecitations);
-             if (potentialStudents.length === 0) {
-                 resultDisplay.textContent = "All students have reached max recitations.";
-                 resultDisplay.style.color = '#ff9800';
-                 return;
-             }
+            if (potentialStudents.length === 0) {
+                resultDisplay.textContent = "All students have reached max recitations.";
+                resultDisplay.style.color = '#ff9800';
+                return;
+            }
             let eligibleStudents = [];
             let rationaleColor = "#555";
             if (mode === 'Fair') {
@@ -1446,7 +1579,7 @@ $students_json = json_encode(array_values($students));
                 eligibleStudents = potentialStudents;
                 rationaleColor = '#555';
             }
-             if (eligibleStudents.length === 0) { resultDisplay.textContent = "No eligible students found!"; return; }
+            if (eligibleStudents.length === 0) { resultDisplay.textContent = "No eligible students found!"; return; }
             const randomIndex = Math.floor(Math.random() * eligibleStudents.length);
             const pickedStudent = eligibleStudents[randomIndex];
             resultDisplay.style.color = rationaleColor;
@@ -1460,13 +1593,13 @@ $students_json = json_encode(array_values($students));
                         <span style="color: #555;">ID: ${pickedStudent.student_id}</span><br>
                         <br>
                         <button onclick="handleScoreButtonClick('${pickedStudent.student_id}', '${mode}')" class="btn btn-record" ${!pickedStudent.subject_code ? 'disabled' : ''}>
-                             <span class="material-icons">note_add</span> Record Score
+                            <span class="material-icons">note_add</span> Record Score
                         </button>
                     </div>`;
             }, 500);
         }
 
-       
+        
         const setupSearch = (inputId, datalistId, hiddenId) => {
             const input = document.getElementById(inputId);
             const hidden = document.getElementById(hiddenId);
@@ -1486,7 +1619,7 @@ $students_json = json_encode(array_values($students));
         setupSearch('studentSearchInput', 'studentDatalist', 'studentIdToEnroll');
         setupSearch('studentReportSearch', 'studentReportDatalist', 'report_student_id_input');
         
-       
+        
         const deleteSearchInput = document.getElementById('studentSearchDelete');
         const deleteHiddenInput = document.getElementById('studentIdToDelete');
         const deleteDatalist = document.getElementById('studentDeleteList');
@@ -1522,7 +1655,7 @@ $students_json = json_encode(array_values($students));
                     return;
                 }
                 
-               
+                
                 document.getElementById('deleteStudentName').textContent = studentName;
                 document.getElementById('studentIdToDeleteConfirmed').value = studentId;
                 document.getElementById('deletion_reason_confirmed').value = reason; 
@@ -1552,12 +1685,12 @@ $students_json = json_encode(array_values($students));
             }
         };
 
-       
+        
         setupModal('initiateDeleteClassButton', 'deleteClassModal', 'classIdToDelete', 'deleteClassName', 'class_id_to_delete_confirmed', 'deleteClassConfirmForm', 'cancelDeleteClassButton');
         setupModal('initiateDeleteCourseButton', 'deleteCourseModal', 'courseIdToDelete', 'deleteCourseName', 'course_id_to_delete_confirmed', 'deleteCourseConfirmForm', 'cancelDeleteCourseButton');
         setupModal('initiateDeleteSubjectButton', 'deleteSubjectModal', 'subjectCodeToDelete', 'deleteSubjectName', 'subject_code_to_delete_confirmed', 'deleteSubjectConfirmForm', 'cancelDeleteSubjectButton');
 
-      
+        
         document.querySelectorAll('.btn-withdraw').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.getElementById('withdrawStudentName').textContent = this.dataset.studentname;
@@ -1571,7 +1704,19 @@ $students_json = json_encode(array_values($students));
             document.getElementById('cancelWithdrawButton').addEventListener('click', () => document.getElementById('withdrawModal').style.display = 'none');
         }
 
-      
+        // New Admin Delete Modal Logic
+        document.querySelectorAll('.delete-admin-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const username = this.dataset.username;
+                document.getElementById('deleteAdminUsername').textContent = username;
+                document.getElementById('username_to_delete_confirmed').value = username;
+                document.getElementById('deleteAdminModal').style.display = 'flex';
+            });
+        });
+        if(document.getElementById('cancelDeleteAdminButton')) {
+            document.getElementById('cancelDeleteAdminButton').addEventListener('click', () => document.getElementById('deleteAdminModal').style.display = 'none');
+        }
+        
         window.onclick = function(event) { if (event.target.classList.contains('modal')) event.target.style.display = "none"; }
         document.querySelectorAll('.close-button, .modal-close-button').forEach(btn => btn.onclick = function() { this.closest('.modal').style.display = 'none'; });
         if(pickerToggleButton) pickerToggleButton.addEventListener('click', togglePicker);

@@ -34,12 +34,12 @@ class studentmanager extends Database {
 
         try {
             $mail->isSMTP();
-            $mail->Host       = SMTP_HOST;
-            $mail->SMTPAuth   = true;
-            $mail->Username   = SMTP_USERNAME;
-            $mail->Password   = SMTP_PASSWORD;
+            $mail->Host      = SMTP_HOST;
+            $mail->SMTPAuth  = true;
+            $mail->Username  = SMTP_USERNAME;
+            $mail->Password  = SMTP_PASSWORD;
             $mail->SMTPSecure = SMTP_SECURE;
-            $mail->Port       = SMTP_PORT;
+            $mail->Port      = SMTP_PORT;
 
             $mail->setFrom(SMTP_FROM_EMAIL, SMTP_FROM_NAME);
             $mail->addAddress($toEmail, $toName);
@@ -62,10 +62,10 @@ class studentmanager extends Database {
         try {
             $conn = $this->connect();
             
-           
+            
             $token = random_int(100000, 999999);
             
-           
+            
             $expires = new DateTime('now', new DateTimeZone('Asia/Manila')); 
             $expires->add(new DateInterval('PT1H')); 
             $expiresStr = $expires->format('Y-m-d H:i:s');
@@ -78,7 +78,7 @@ class studentmanager extends Database {
             $stmt = $conn->prepare($sql);
             $stmt->execute([':token' => $token, ':studentId' => $studentId, ':expires' => $expiresStr]);
 
-           
+            
             $subject = "Your Verification Code - Recitation System";
             $body = "
                 <html><body>
@@ -106,7 +106,7 @@ class studentmanager extends Database {
         }
     }
 
-   
+    
     public function verifyRegistration($email, $code) {
         try {
             $conn = $this->connect();
@@ -160,7 +160,7 @@ class studentmanager extends Database {
         }
     }
 
-  
+ 
     public function updateStudentBasicInfo($studentId, $lastName, $firstName, $middleName, $nickname, $gender) {
         $sql = "UPDATE students SET lastname = :lname, firstname = :fname, middlename = :mname, nickname = :nname, gender = :gender WHERE student_id = :sid";
         try {
@@ -480,7 +480,7 @@ class studentmanager extends Database {
             } catch (Exception $e) {
                 error_log("Failed to send notification/email: " . $e->getMessage());
             }
-         
+          
             return true;
         }
         return false;
@@ -603,7 +603,7 @@ class studentmanager extends Database {
             $sql_class_join = "INNER JOIN student_enrollments se ON s.student_id = se.student_id
                                INNER JOIN class_sections c ON se.class_id = c.class_id";
             
-
+            
             $whereConditions[] = "c.class_id = :classFilter";
             $params[':classFilter'] = $classFilter;
             
@@ -626,17 +626,17 @@ class studentmanager extends Database {
         }
 
         $sql = "SELECT
-                    $sql_select_fields,
-                    IFNULL(AVG(r.score), 0) AS averageScore,
-                    COUNT(r.recit_id) AS totalRecitations
-                FROM students s
-                LEFT JOIN course co ON s.course_id = co.course_id
-                $sql_class_join
-                $sql_recitation_join
-                $sql_where
-                GROUP BY s.student_id, s.lastname, s.firstname, s.middlename, s.nickname, s.gender, s.birthdate, co.course_name" .
-                ($classFilter !== 'all' ? ", c.class_name, c.subject_code, c.class_id" : "") .
-                " ORDER BY {$dbSortColumn} {$dbSortOrder}";
+                     $sql_select_fields,
+                     IFNULL(AVG(r.score), 0) AS averageScore,
+                     COUNT(r.recit_id) AS totalRecitations
+                 FROM students s
+                 LEFT JOIN course co ON s.course_id = co.course_id
+                 $sql_class_join
+                 $sql_recitation_join
+                 $sql_where
+                 GROUP BY s.student_id, s.lastname, s.firstname, s.middlename, s.nickname, s.gender, s.birthdate, co.course_name" .
+                 ($classFilter !== 'all' ? ", c.class_name, c.subject_code, c.class_id" : "") .
+                 " ORDER BY {$dbSortColumn} {$dbSortOrder}";
 
         try {
              $query = $this->connect()->prepare($sql);
@@ -644,7 +644,7 @@ class studentmanager extends Database {
                  return $query->fetchAll(PDO::FETCH_ASSOC);
              }
          } catch (PDOException $e) {
-             error_log("Error viewing students: " . $e->getMessage());
+              error_log("Error viewing students: " . $e->getMessage());
          }
         return [];
     }
@@ -870,6 +870,67 @@ class studentmanager extends Database {
             return false;
         }
     }
+
+    // --- START: NEW ADMIN MANAGEMENT METHODS ---
+    public function addAdmin($username, $password) {
+        $conn = $this->connect();
+        try {
+            // Check if username already exists
+            $stmt_check = $conn->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
+            $stmt_check->execute([$username]);
+            if ($stmt_check->fetchColumn() > 0) {
+                return "Username already exists.";
+            }
+
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+            $role = 'admin';
+            
+            // student_id is NULL for Admins, and they are immediately verified (is_verified = 1)
+            $sql_users = "INSERT INTO users (username, password_hash, role, student_id, is_verified)
+                          VALUES (:username, :password, :role, NULL, 1)"; 
+            
+            $query_users = $conn->prepare($sql_users);
+            $query_users->execute([
+                ":username" => $username,
+                ":password" => $hashed_password,
+                ":role" => $role
+            ]);
+            
+            return true;
+        } catch (PDOException $e) {
+            error_log("Error adding admin: " . $e->getMessage());
+            return "Database error: " . $e->getMessage();
+        }
+    }
+
+    public function fetchAllAdmins() {
+        // Select all users with role 'admin' and no student ID
+        $sql = "SELECT username FROM users WHERE role = 'admin' AND student_id IS NULL ORDER BY username ASC";
+        try {
+            $query = $this->connect()->prepare($sql);
+            if ($query->execute()) {
+                return $query->fetchAll(PDO::FETCH_ASSOC);
+            }
+        } catch (PDOException $e) {
+            error_log("Error fetching all admins: " . $e->getMessage());
+        }
+        return [];
+    }
+    
+    public function deleteAdmin($username) {
+        // Only delete users with role 'admin' and no student ID
+        $sql = "DELETE FROM users WHERE username = :username AND role = 'admin' AND student_id IS NULL";
+        try {
+            $query = $this->connect()->prepare($sql);
+            $query->bindParam(":username", $username);
+            $query->execute();
+            return $query->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log("Error deleting admin: " . $e->getMessage());
+            return false;
+        }
+    }
+    // --- END: NEW ADMIN MANAGEMENT METHODS ---
     
     public function connect() { return parent::connect(); }
 }
